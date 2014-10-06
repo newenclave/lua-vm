@@ -248,6 +248,11 @@ public:
         return lua_type( vm_, id );
     }
 
+    int get_top( )
+    {
+        return lua_gettop( vm_ );
+    }
+
     template<typename T>
     T get( int id = -1 )
     {
