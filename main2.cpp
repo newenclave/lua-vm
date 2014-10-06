@@ -24,7 +24,78 @@ struct lua_object {
         return false;
     }
 
+    virtual lua_object * clone( ) const
+    {
+        return new lua_object;
+    }
 
+    virtual size_t count( ) const
+    {
+        return 0;
+    }
+};
+
+class lua_bool: public lua_object {
+
+    bool value_;
+
+public:
+
+    lua_bool( bool val )
+        :value_(val)
+    { }
+
+    virtual int type_id( ) const
+    {
+        return LUA_TBOOLEAN;
+    }
+
+    virtual bool is_container( ) const
+    {
+        return false;
+    }
+
+    virtual lua_object *clone( ) const
+    {
+        return new lua_bool( value_ );
+    }
+
+    virtual size_t count( ) const
+    {
+        return 0;
+    }
+
+};
+
+class lua_string: public lua_object {
+
+    std::string cont_;
+
+public:
+
+    lua_string( std::string cont )
+        :cont_(cont)
+    { }
+
+    virtual int type_id( ) const
+    {
+        return LUA_TSTRING;
+    }
+
+    virtual bool is_container( ) const
+    {
+        return true;
+    }
+
+    virtual lua_object *clone( ) const
+    {
+        return new lua_string( cont_ );
+    }
+
+    virtual size_t count( ) const
+    {
+        return cont_.size( );
+    }
 };
 
 class lua_vm {
@@ -147,7 +218,7 @@ public:
 };
 
 
-int main( ) try
+int main0( ) try
 {
     lua_vm v;
 

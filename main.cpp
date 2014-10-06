@@ -305,7 +305,7 @@ static int l_print( lua_State *L )
     return 0;
 }
 
-int main0( ) try
+int main( ) try
 {
     lua_vm v;
     v.register_call( "print", l_print );
