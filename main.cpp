@@ -11,6 +11,143 @@ extern "C" {
 
 #include <math.h>
 
+const char * lua_type_to_string( int t )
+{
+    switch( t ) {
+    case LUA_TNIL:
+        return "nil";
+    case LUA_TBOOLEAN:
+        return "boolean";
+    case LUA_TLIGHTUSERDATA:
+        return "lightuserdata";
+    case LUA_TNUMBER:
+        return "number";
+    case LUA_TSTRING:
+        return "string";
+    case LUA_TTABLE:
+        return "table";
+    case LUA_TFUNCTION:
+        return "function";
+    case LUA_TUSERDATA:
+        return "userdata";
+    case LUA_TTHREAD:
+        return "thread";
+    }
+    return "none";
+}
+
+template <int LuaTypeID>
+struct lua_type_id {
+
+    enum { type_index = LuaTypeID };
+    static bool check( lua_State *L, int idx )
+    {
+        int r = lua_type( L, idx );
+        return r == type_index;
+    }
+};
+
+template <typename T>
+struct lua_type_id_integral: public lua_type_id<LUA_TNUMBER> {
+    static T get( lua_State *L, int idx )
+    {
+        return static_cast<T>(lua_tointeger( L, idx ));
+    }
+};
+
+template <typename T>
+struct lua_type_id_numeric: public lua_type_id<LUA_TNUMBER> {
+    static T get( lua_State *L, int idx )
+    {
+        return static_cast<T>(lua_tonumber( L, idx ));
+    }
+};
+
+template <typename T>
+struct lua_type_id_pointer: public lua_type_id<LUA_TLIGHTUSERDATA> {
+    static T get( lua_State *L, int idx )
+    {
+        return static_cast<T>(lua_topointer( L, idx ));
+    }
+};
+
+template <typename T>
+struct lua_type_id_string {
+
+    enum { type_index = LUA_TSTRING };
+    static bool check( lua_State * /*L*/, int /*idx*/ )
+    {
+        return true;
+    }
+
+    static T get( lua_State *L, int idx )
+    {
+        const char *t = lua_tostring( L, idx );
+        return T( t ? t : "<nil>" );
+    }
+};
+
+template <typename CT>
+struct lua_type_trait {
+    enum { type_index = LUA_TNONE };
+};
+
+template <>
+struct lua_type_trait<int> : public
+       lua_type_id_integral<int> { };
+
+template <>
+struct lua_type_trait<unsigned> : public
+       lua_type_id_integral<unsigned> { };
+
+template <>
+struct lua_type_trait<long> : public
+       lua_type_id_integral<long> { };
+
+template <>
+struct lua_type_trait<unsigned long> : public
+       lua_type_id_integral<unsigned long> { };
+
+template <>
+struct lua_type_trait<short> : public
+       lua_type_id_integral<short> { };
+
+template <>
+struct lua_type_trait<unsigned short> : public
+       lua_type_id_integral<unsigned short> { };
+
+template <>
+struct lua_type_trait<char> : public
+       lua_type_id_integral<char> { };
+
+template <>
+struct lua_type_trait<unsigned char> : public
+       lua_type_id_integral<unsigned char> { };
+
+template <>
+struct lua_type_trait<std::string> : public
+       lua_type_id_string<std::string> { };
+
+template <>
+struct lua_type_trait<const char *> : public
+       lua_type_id_string<const char *> { };
+
+template <>
+struct lua_type_trait<float> : public
+       lua_type_id_numeric<float> { };
+
+template <>
+struct lua_type_trait<double> : public
+       lua_type_id_numeric<double> { };
+
+template <>
+struct lua_type_trait<long double> : public
+       lua_type_id_numeric<long double> { };
+
+template <>
+struct lua_type_trait<const void *> : public
+       lua_type_id_pointer<const void *> { };
+
 class lua_vm {
 
     lua_State *vm_;
@@ -50,11 +187,21 @@ public:
         return vm_;
     }
 
+    void pop( )
+    {
+        lua_pop( vm_, 1 );
+    }
+
     std::string pop_error( )
     {
         std::string res( lua_tostring(vm_, -1) );
-        lua_pop( vm_, 1 );
+        pop( );
         return res;
+    }
+
+    void register_call( const char *name, lua_CFunction fn )
+    {
+        lua_register( vm_, name, fn );
     }
 
     std::string error( )
@@ -69,6 +216,50 @@ public:
             throw std::runtime_error( pop_error( ) );
         }
     }
+
+    void push( bool value )
+    {
+        lua_pushboolean( vm_, value ? 1 : 0 );
+    }
+
+    void push( const char* value )
+    {
+        lua_pushstring( vm_, value );
+    }
+
+    void push( const std::string& value )
+    {
+        lua_pushstring( vm_, value.c_str( ) );
+    }
+
+    void push( lua_CFunction value )
+    {
+        lua_pushcfunction( vm_, value );
+    }
+
+    template<typename T>
+    void push( T * value )
+    {
+        lua_pushlightuserdata( vm_, reinterpret_cast<void *>( value ) );
+    }
+
+    int get_type( int id = -1 )
+    {
+        return lua_type( vm_, id );
+    }
+
+    template<typename T>
+    T get( int id = -1 )
+    {
+        if( !lua_type_trait<T>::check( vm_, id ) ) {
+            throw std::runtime_error( std::string("bad type '")
+                    + lua_type_to_string( lua_type_trait<T>::type_index )
+                    + std::string("'. lua type is '")
+                    + lua_type_to_string( get_type( id ) )
+                    + std::string("'") );
+        }
+        return lua_type_trait<T>::get( vm_, id );
+    }
 };
 
 static int l_sin ( lua_State *L )
@@ -82,6 +273,8 @@ static int l_print( lua_State *L )
 {
     int n = lua_gettop( L );
 
+    lua_vm tvm( L );
+
     if( n < 0 ) {
         n = ( (n * -1) + 1 );
     }
@@ -90,13 +283,16 @@ static int l_print( lua_State *L )
 
         size_t len = 0;
 
-        const char *s = lua_tolstring(L, b, &len);  /* get result */
+        const char * r = tvm.get<const char *>( b );
 
-        if (s != NULL) {
-            std::cout << std::string(s, len);
-        } else {
-            std::cout << std::string("<none>");
-        }
+        std::cout << "I " << r << "\n";
+        //const char *s = lua_tolstring(L, b, &len);  /* get result */
+
+//        if (s != NULL) {
+//            std::cout << std::string(s, len);
+//        } else {
+//            std::cout << std::string("<none>");
+//        }
     }
 
     lua_pop( L, n );
@@ -107,12 +303,11 @@ static int l_print( lua_State *L )
 int main( ) try
 {
     lua_vm v;
+    v.register_call( "print", l_print );
+    v.register_call( "mysin", l_sin );
 
-    lua_pushcfunction(v.state( ), l_print);
-    lua_setglobal(v.state( ), "print");
-
-    lua_pushcfunction(v.state( ), l_sin);
-    lua_setglobal(v.state( ), "mysin");
+//    lua_pushcfunction(v.state( ), l_sin, 1);
+//    lua_setglobal(v.state( ), "mysin");
 
     v.check_call_error(luaL_loadfile(v.state( ), "test.lua"));
     v.check_call_error(lua_pcall(v.state( ), 0, LUA_MULTRET, 0));
