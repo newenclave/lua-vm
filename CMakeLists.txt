@@ -30,3 +30,4 @@ else( )
 
 endif( )
 
+message( ${LUA_INCLUDE_DIR} )

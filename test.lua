@@ -3,4 +3,12 @@
 
 --print( mysin( 'sdfsdf' ), '\n')
 
-print( 1, 2, 3, 4, nil, '123412312\n' )
+local t = {}
+t[1] = "x"
+t[2] = "y"
+t.x = 1
+t[30] = 23
+t[4] = 45
+a = t
+
+print( 1, 2, 3, 4, nil, '123412312', t )
