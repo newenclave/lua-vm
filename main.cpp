@@ -192,6 +192,11 @@ public:
         lua_pop( vm_, 1 );
     }
 
+    void pop( int n )
+    {
+        lua_pop( vm_, n );
+    }
+
     std::string pop_error( )
     {
         std::string res( lua_tostring(vm_, -1) );
@@ -253,6 +258,10 @@ public:
         return lua_gettop( vm_ );
     }
 
+    void clean() {
+        pop( get_top( ) );
+    }
+
     template<typename T>
     T get( int id = -1 )
     {
@@ -267,11 +276,28 @@ public:
     }
 };
 
-static int l_sin ( lua_State *L )
+void print_table( lua_State *L, int idx )
 {
-    double d = lua_tonumber(L, 1);  /* get argument */
-    lua_pushnumber(L, sin(d));      /* push result */
-    return 1;                       /* number of results */
+//    lua_pushvalue( L, idx ); // stack: map
+
+//    lua_pushnil( L );          // stack: map nil
+
+    std::string key_ = lua_tostring( L, idx - 3 );
+    std::string val_ = lua_tostring( L, idx - 2 );
+
+    std::cout << key_ << " = " << val_ << "\n";
+
+//    while( lua_next(L, idx - 1) )   // stack: map key value
+//    {
+//        std::string key_ = lua_tostring( L, idx - 1 );
+//        std::string val_ = lua_tostring( L, idx  );
+
+
+//        idx += 1;
+//        //lua_pop(L, 1); // stack: map key
+//    }
+    // stack: map
+//    lua_pop(L, 1); // stack:
 }
 
 static int l_print( lua_State *L )
@@ -284,20 +310,15 @@ static int l_print( lua_State *L )
         n = ( (n * -1) + 1 );
     }
 
+    std::cout << n << "\n";
+
     for ( int b = 1; b <= n; ++b ) {
-
-        size_t len = 0;
-
-        const char * r = tvm.get<const char *>( b );
-
-        std::cout << "I " << r << "\n";
-        //const char *s = lua_tolstring(L, b, &len);  /* get result */
-
-//        if (s != NULL) {
-//            std::cout << std::string(s, len);
-//        } else {
-//            std::cout << std::string("<none>");
-//        }
+        if( tvm.get_type( b ) == LUA_TTABLE ) {
+            std::cout << "Table found: \n";
+            print_table( L, b );
+        } else {
+            std::cout << tvm.get<const char *>( b );
+        }
     }
 
     lua_pop( L, n );
@@ -309,8 +330,6 @@ int main( ) try
 {
     lua_vm v;
     v.register_call( "print", l_print );
-    v.register_call( "mysin", l_sin );
-
 //    lua_pushcfunction(v.state( ), l_sin, 1);
 //    lua_setglobal(v.state( ), "mysin");
 
