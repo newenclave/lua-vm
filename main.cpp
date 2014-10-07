@@ -72,7 +72,7 @@ lua::objects::base_sptr create( lua_State *L, int idx )
     return lo::base_sptr(new lo::nil);
 }
 
-static int l_print( lua_State *L )
+int l_print( lua_State *L )
 {
     int n = lua_gettop( L );
 
@@ -100,7 +100,8 @@ int main( ) try
 //    lua_pushcfunction(v.state( ), l_sin, 1);
 //    lua_setglobal(v.state( ), "mysin");
 
-    v.set_in_global_table( "globt", "counter", &v );
+    v.set_in_table2( "globt.tress.tt", "counter", &v );
+    v.set_in_table2( "globt.tress.tt", "counter2", &v );
 
     v.check_call_error(luaL_loadfile(v.get_state( ), "test.lua"));
     v.check_call_error(lua_pcall(v.get_state( ), 0, LUA_MULTRET, 0));

@@ -20,7 +20,7 @@ local t = {
          ,[1] = 'one'
          ,[2] = 'two'
     }
-    ,tg = globt.str
+    ,tg = globt
 }
 
 function create_table( id )
@@ -49,4 +49,4 @@ end
 
 --a:call( t )
 
-print( a:get_id( ), ' ', b:get_id( ) )
+print( globt )
