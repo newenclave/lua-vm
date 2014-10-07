@@ -6,6 +6,8 @@
 #include <vector>
 #include <stdlib.h>
 
+#include <memory>
+
 extern "C" {
 #include "lua.h"
 #include "lualib.h"
@@ -73,68 +75,16 @@ struct lua_object {
 
 };
 
-class lua_object_keeper {
+typedef std::shared_ptr<lua_object> lua_object_sptr;
+typedef std::unique_ptr<lua_object> lua_object_uptr;
 
-    lua_object *obj_;
-
-public:
-
-    lua_object_keeper (lua_object_keeper &other)
-        :obj_(other.get( ) ? other->clone( ) : NULL)
-    { }
-
-    lua_object_keeper &operator = (lua_object_keeper &other)
-    {
-        reset( other.get( ) ? other->clone( ) : NULL );
-    }
-
-    explicit lua_object_keeper( lua_object *obj )
-        :obj_(obj)
-    { }
-
-    lua_object_keeper( )
-        :obj_(NULL)
-    { }
-
-    ~lua_object_keeper( )
-    {
-        if( obj_ ) delete obj_;
-    }
-
-    void reset( lua_object *new_obj = NULL )
-    {
-        if( obj_ ) delete obj_;
-        obj_ = new_obj;
-    }
-
-    lua_object * get( )
-    {
-        return obj_;
-    }
-
-    const lua_object * get( ) const
-    {
-        return obj_;
-    }
-
-    lua_object * operator -> ( )
-    {
-        return get( );
-    }
-
-    const lua_object * operator -> ( ) const
-    {
-        return get( );
-    }
-};
-
-class lua_bool: public lua_object {
+class lua_object_bool: public lua_object {
 
     bool value_;
 
 public:
 
-    lua_bool( bool val )
+    lua_object_bool( bool val )
         :value_(val)
     { }
 
@@ -145,7 +95,7 @@ public:
 
     virtual lua_object *clone( ) const
     {
-        return new lua_bool( value_ );
+        return new lua_object_bool( value_ );
     }
 
     void push( lua_State *L ) const
@@ -166,7 +116,7 @@ public:
 
 };
 
-class lua_nil: public lua_object {
+class lua_object_nil: public lua_object {
 
 public:
     virtual int type_id( ) const
@@ -176,7 +126,7 @@ public:
 
     virtual lua_object *clone( ) const
     {
-        return new lua_nil;
+        return new lua_object_nil;
     }
 
     void push( lua_State *L ) const
@@ -190,13 +140,13 @@ public:
     }
 };
 
-class lua_light_userdata: public lua_object {
+class lua_object_light_userdata: public lua_object {
 
     void *ptr_;
 
 public:
 
-    lua_light_userdata( void *ptr )
+    lua_object_light_userdata( void *ptr )
         :ptr_(ptr)
     { }
 
@@ -207,7 +157,7 @@ public:
 
     virtual lua_object *clone( ) const
     {
-        return new lua_light_userdata( ptr_ );
+        return new lua_object_light_userdata( ptr_ );
     }
 
     void push( lua_State *L ) const
@@ -223,13 +173,13 @@ public:
     }
 };
 
-class lua_number: public lua_object {
+class lua_object_number: public lua_object {
 
     lua_Number num_;
 
 public:
 
-    lua_number( lua_Number num )
+    lua_object_number( lua_Number num )
         :num_(num)
     { }
 
@@ -240,7 +190,7 @@ public:
 
     virtual lua_object *clone( ) const
     {
-        return new lua_number( num_ );
+        return new lua_object_number( num_ );
     }
 
     void push( lua_State *L ) const
@@ -262,13 +212,13 @@ public:
 
 };
 
-class lua_string: public lua_object {
+class lua_object_string: public lua_object {
 
     std::string cont_;
 
 public:
 
-    lua_string( std::string cont )
+    lua_object_string( std::string cont )
         :cont_(cont)
     { }
 
@@ -279,7 +229,7 @@ public:
 
     virtual lua_object *clone( ) const
     {
-        return new lua_string( cont_ );
+        return new lua_object_string( cont_ );
     }
 
     void push( lua_State *L ) const
@@ -306,7 +256,7 @@ public:
 
 class lua_object_pair: public lua_object {
 
-    std::pair<lua_object_keeper, lua_object_keeper> pair_;
+    std::pair<lua_object_sptr, lua_object_sptr> pair_;
 
 public:
 
@@ -365,17 +315,17 @@ public:
     }
 };
 
-class lua_table: public lua_object {
+class lua_object_table: public lua_object {
 
     std::vector<lua_object_pair> list_;
 
 public:
 
-    lua_table( const lua_table &o )
+    lua_object_table( const lua_object_table &o )
         :list_(o.list_)
     { }
 
-    lua_table( )
+    lua_object_table( )
     { }
 
     int type_id( ) const
@@ -400,7 +350,7 @@ public:
 
     virtual lua_object *clone( ) const
     {
-        return new lua_table( *this );
+        return new lua_object_table( *this );
     }
 
     void push( lua_State *L ) const
@@ -486,7 +436,7 @@ lua_object * create_table( lua_State *L, int index )
     lua_pushvalue(L, index);
     lua_pushnil(L);
 
-    lua_table *new_table = new lua_table;
+    lua_object_table *new_table = new lua_object_table;
     while (lua_next(L, -2)) {
 
         lua_pushvalue(L, -2);
@@ -506,13 +456,13 @@ lua_object * create( lua_State *L, int idx )
     int t = lua_type( L, idx );
     switch( t ) {
     case LUA_TBOOLEAN:
-        return new lua_bool( lua_toboolean( L, idx ) );
+        return new lua_object_bool( lua_toboolean( L, idx ) );
     case LUA_TLIGHTUSERDATA:
-        return new lua_light_userdata( lua_touserdata( L, idx ) );
+        return new lua_object_light_userdata( lua_touserdata( L, idx ) );
     case LUA_TNUMBER:
-        return new lua_number( lua_tonumber( L, idx ) );
+        return new lua_object_number( lua_tonumber( L, idx ) );
     case LUA_TSTRING:
-        return new lua_string( lua_tostring( L, idx ) );
+        return new lua_object_string( lua_tostring( L, idx ) );
     case LUA_TTABLE:
         return g_table = create_table( L, idx );
     case LUA_TFUNCTION:
@@ -522,7 +472,7 @@ lua_object * create( lua_State *L, int idx )
 //    case LUA_TTHREAD:
 //        return "thread";
     }
-    return new lua_nil;
+    return new lua_object_nil;
 }
 
 class lua_vm {
