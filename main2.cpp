@@ -169,7 +169,7 @@ public:
     std::string str( ) const
     {
         std::ostringstream oss;
-        oss << "0x" << std::hex << ptr_;
+        oss << std::hex << ptr_;
         return oss.str( );
     }
 };
@@ -504,7 +504,8 @@ lua_object_sptr create( lua_State *L, int idx )
     int t = lua_type( L, idx );
     switch( t ) {
     case LUA_TBOOLEAN:
-        return lua_object_sptr(new lua_object_bool( lua_toboolean( L, idx ) ));
+        return lua_object_sptr(
+                    new lua_object_bool( lua_toboolean( L, idx ) ));
     case LUA_TLIGHTUSERDATA:
         return lua_object_sptr(
                     new lua_object_light_userdata( lua_touserdata( L, idx ) ));
@@ -514,11 +515,11 @@ lua_object_sptr create( lua_State *L, int idx )
     case LUA_TSTRING:
         return lua_object_sptr(
                     new lua_object_string( lua_tostring( L, idx ) ));
-    case LUA_TTABLE:
-        return g_table = create_table( L, idx );
     case LUA_TFUNCTION:
         return lua_object_sptr(
                     new lua_object_function( lua_tocfunction( L, idx ) ));
+    case LUA_TTABLE:
+        return g_table = create_table( L, idx );
 //    case LUA_TUSERDATA:
 //        return "userdata";
 //    case LUA_TTHREAD:
@@ -569,6 +570,11 @@ public:
     void pop( )
     {
         lua_pop( vm_, 1 );
+    }
+
+    void pop( int n )
+    {
+        lua_pop( vm_, n );
     }
 
     std::string pop_error( )
@@ -632,6 +638,34 @@ public:
         return lua_gettop( vm_ );
     }
 
+    template <typename T>
+    void set_in_global_table( const char *table_name,
+                              const char *key, T value )
+    {
+        push( table_name );
+        push( table_name );
+
+        lua_gettable( vm_, LUA_GLOBALSINDEX );
+
+        // ==> table name | nil or table
+        if (!lua_istable(vm_, -1))
+        {
+            if (lua_isnoneornil(vm_, -1)) {
+                pop( 1 );
+                lua_newtable( vm_ );
+            }
+            else {
+                lua_pop(vm_, 2);
+                throw std::logic_error( "Not table" );
+            }
+        }
+
+        push( key );               // ==> table name | table | item
+        push( value );             // ==> table name | table | item | value
+        lua_settable( vm_, -3 );   // ==> table name | table
+        lua_settable( vm_, LUA_GLOBALSINDEX );   // ==>
+    }
+
 //    template<typename T>
 //    T get( int id = -1 )
 //    {
@@ -656,13 +690,12 @@ static int l_print( lua_State *L )
         n = ( (n * -1) + 1 );
     }
 
-    std::cout << n << "\n";
-
     for ( int b = 1; b <= n; ++b ) {
-        std::cout << create( L, b )->str( );
+        std::cout << create( tvm.state( ), b )->str( );
     }
 
-    lua_pop( L, n );
+    std::cout << "\n";
+    tvm.pop( n );
 
     return 0;
 }
@@ -671,8 +704,11 @@ int main( ) try
 {
     lua_vm v;
     v.register_call( "print", l_print );
+
 //    lua_pushcfunction(v.state( ), l_sin, 1);
 //    lua_setglobal(v.state( ), "mysin");
+
+    v.set_in_global_table( "globt", "counter", &v );
 
     v.check_call_error(luaL_loadfile(v.state( ), "test.lua"));
     v.check_call_error(lua_pcall(v.state( ), 0, LUA_MULTRET, 0));

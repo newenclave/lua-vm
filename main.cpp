@@ -48,7 +48,7 @@ struct lua_type_id {
 };
 
 template <typename T>
-struct lua_type_id_integral: public lua_type_id<LUA_TNUMBER> {
+struct lua_type_id_integer: public lua_type_id<LUA_TNUMBER> {
     static T get( lua_State *L, int idx )
     {
         return static_cast<T>(lua_tointeger( L, idx ));
@@ -94,35 +94,35 @@ struct lua_type_trait {
 
 template <>
 struct lua_type_trait<int> : public
-       lua_type_id_integral<int> { };
+       lua_type_id_integer<int> { };
 
 template <>
 struct lua_type_trait<unsigned> : public
-       lua_type_id_integral<unsigned> { };
+       lua_type_id_integer<unsigned> { };
 
 template <>
 struct lua_type_trait<long> : public
-       lua_type_id_integral<long> { };
+       lua_type_id_integer<long> { };
 
 template <>
 struct lua_type_trait<unsigned long> : public
-       lua_type_id_integral<unsigned long> { };
+       lua_type_id_integer<unsigned long> { };
 
 template <>
 struct lua_type_trait<short> : public
-       lua_type_id_integral<short> { };
+       lua_type_id_integer<short> { };
 
 template <>
 struct lua_type_trait<unsigned short> : public
-       lua_type_id_integral<unsigned short> { };
+       lua_type_id_integer<unsigned short> { };
 
 template <>
 struct lua_type_trait<char> : public
-       lua_type_id_integral<char> { };
+       lua_type_id_integer<char> { };
 
 template <>
 struct lua_type_trait<unsigned char> : public
-       lua_type_id_integral<unsigned char> { };
+       lua_type_id_integer<unsigned char> { };
 
 template <>
 struct lua_type_trait<std::string> : public

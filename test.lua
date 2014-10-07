@@ -8,7 +8,7 @@ function test( a )
 end
 
 local t = {
-     name =  "test"
+     name =  "$$$$$$$$"
     ,value = "1"
     ,forward = {
          zero = 0
@@ -20,6 +20,10 @@ local t = {
          ,[1] = 'one'
          ,[2] = 'two'
     }
+    ,tg = globt
 }
 
-print( 123423423 * 234234234234234, 2, "123\n", t, "\n===============\n" )
+a = t;
+a.name = 'a!!!!!!!!!'
+
+print( t )
