@@ -51,6 +51,11 @@ struct lua_object {
         return 0;
     }
 
+    virtual void push( lua_State *L ) const
+    {
+        throw std::runtime_error( "push for 'none' is not available" );
+    }
+
     const lua_object * at( size_t /*index*/ ) const
     {
         throw std::out_of_range( "bad index" );
@@ -143,6 +148,11 @@ public:
         return new lua_bool( value_ );
     }
 
+    void push( lua_State *L ) const
+    {
+        lua_pushboolean( L, value_ ? 1 : 0 );
+    }
+
     std::string str( ) const
     {
         static const char * vals[2] = { "0", "1" };
@@ -167,6 +177,11 @@ public:
     virtual lua_object *clone( ) const
     {
         return new lua_nil;
+    }
+
+    void push( lua_State *L ) const
+    {
+        lua_pushnil( L );
     }
 
     std::string str( ) const
@@ -195,6 +210,11 @@ public:
         return new lua_light_userdata( ptr_ );
     }
 
+    void push( lua_State *L ) const
+    {
+        lua_pushlightuserdata( L, ptr_ );
+    }
+
     std::string str( ) const
     {
         std::ostringstream oss;
@@ -221,6 +241,11 @@ public:
     virtual lua_object *clone( ) const
     {
         return new lua_number( num_ );
+    }
+
+    void push( lua_State *L ) const
+    {
+        lua_pushnumber( L, num_ );
     }
 
     std::string str( ) const
@@ -255,6 +280,11 @@ public:
     virtual lua_object *clone( ) const
     {
         return new lua_string( cont_ );
+    }
+
+    void push( lua_State *L ) const
+    {
+        lua_pushstring( L, cont_.c_str( ) );
     }
 
     virtual size_t count( ) const
@@ -310,6 +340,12 @@ public:
         return new lua_object_pair( *this );
     }
 
+    void push( lua_State *L ) const
+    {
+        pair_.first->push( L );
+        pair_.second->push( L );
+    }
+
     const lua_object * at( size_t index ) const
     {
         if( index < 2 ) {
@@ -357,7 +393,7 @@ public:
         return &list_.at(index);
     }
 
-    void push( lua_object_pair *val )
+    void push_back( lua_object_pair *val )
     {
         list_.push_back( *val );
     }
@@ -365,6 +401,16 @@ public:
     virtual lua_object *clone( ) const
     {
         return new lua_table( *this );
+    }
+
+    void push( lua_State *L ) const
+    {
+        typedef std::vector<lua_object_pair>::const_iterator citr;
+        lua_newtable( L );
+        for( citr b(list_.begin( )), e(list_.end( )); b!=e; ++b ) {
+            b->push( L );
+            lua_settable(L, -3);
+        }
     }
 
     std::string str( size_t shift, const lua_object_pair &pair ) const
@@ -398,6 +444,41 @@ public:
     }
 };
 
+class lua_object_function: public lua_object {
+
+    lua_CFunction func_;
+
+public:
+
+    lua_object_function( lua_CFunction func )
+        :func_(func)
+    { }
+
+    virtual int type_id( ) const
+    {
+        return lua_object::TYPE_FUNCTION;
+    }
+
+    virtual lua_object *clone( ) const
+    {
+        return new lua_object_function( func_ );
+    }
+
+    void push( lua_State *L ) const
+    {
+        lua_pushcfunction( L, func_ );
+    }
+
+    std::string str( ) const
+    {
+        std::ostringstream oss;
+        oss << "call@" << func_;
+        return oss.str( );
+    }
+};
+
+lua_object *g_table = NULL;
+
 lua_object * create( lua_State *L, int idx );
 
 lua_object * create_table( lua_State *L, int index )
@@ -411,7 +492,7 @@ lua_object * create_table( lua_State *L, int index )
         lua_pushvalue(L, -2);
         lua_object_pair *new_pair
                 = new lua_object_pair( create( L, -1 ), create( L, -2 ) );
-        new_table->push( new_pair );
+        new_table->push_back( new_pair );
         lua_pop(L, 2);
     }
 
@@ -433,9 +514,9 @@ lua_object * create( lua_State *L, int idx )
     case LUA_TSTRING:
         return new lua_string( lua_tostring( L, idx ) );
     case LUA_TTABLE:
-        return create_table( L, idx );
-//    case LUA_TFUNCTION:
-//        return "function";
+        return g_table = create_table( L, idx );
+    case LUA_TFUNCTION:
+        return new lua_object_function( lua_tocfunction( L, idx ) );
 //    case LUA_TUSERDATA:
 //        return "userdata";
 //    case LUA_TTHREAD:
@@ -593,6 +674,14 @@ int main( ) try
 
     v.check_call_error(luaL_loadfile(v.state( ), "test.lua"));
     v.check_call_error(lua_pcall(v.state( ), 0, LUA_MULTRET, 0));
+
+    luaL_loadstring(v.state( ), "function fullName(t) print( t, '\\n' ) end");
+    lua_pcall(v.state( ), 0, 0, 0);
+
+    lua_getglobal(v.state( ), "fullName");
+    g_table->push( v.state( ) );
+
+    lua_pcall(v.state( ), 1, 0, 0);
 
     return 0;
 } catch( const std::exception &ex ) {

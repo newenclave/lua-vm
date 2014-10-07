@@ -3,7 +3,7 @@
 
 --print( mysin( 'sdfsdf' ), '\n')
 
-function tets( a )
+function test( a )
     print(a, 'test!\n')
 end
 
@@ -16,7 +16,8 @@ t[4] = 45
 t['table'] = { }
 t['table'].z = 'zzzzzz'
 t.z = '!!!!'
-t.f = tets
+t.f = print
+t.empty = {}
 
 a = t
 
