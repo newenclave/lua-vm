@@ -265,6 +265,10 @@ public:
         return lua_object::TYPE_PAIR;
     }
 
+    lua_object_pair( const lua_object_sptr f, const lua_object_sptr s )
+        :pair_(std::make_pair(f, s))
+    { }
+
     lua_object_pair( const lua_object *f, const lua_object *s )
     {
         pair_.first.reset( f->clone( ) );
@@ -315,9 +319,13 @@ public:
     }
 };
 
+typedef std::shared_ptr<lua_object_pair> lua_object_pair_sptr;
+
 class lua_object_table: public lua_object {
 
-    std::vector<lua_object_pair> list_;
+
+    typedef std::vector<lua_object_pair_sptr> pair_vector;
+    pair_vector list_;
 
 public:
 
@@ -340,12 +348,12 @@ public:
 
     const lua_object * at( size_t index ) const
     {
-        return &list_.at(index);
+        return list_.at(index).get( );
     }
 
-    void push_back( lua_object_pair *val )
+    void push_back( lua_object_pair_sptr &val )
     {
-        list_.push_back( *val );
+        list_.push_back( val );
     }
 
     virtual lua_object *clone( ) const
@@ -355,10 +363,10 @@ public:
 
     void push( lua_State *L ) const
     {
-        typedef std::vector<lua_object_pair>::const_iterator citr;
+        typedef pair_vector::const_iterator citr;
         lua_newtable( L );
         for( citr b(list_.begin( )), e(list_.end( )); b!=e; ++b ) {
-            b->push( L );
+            (*b)->push( L );
             lua_settable(L, -3);
         }
     }
@@ -375,12 +383,12 @@ public:
     {
         std::ostringstream oss;
 
-        typedef std::vector<lua_object_pair>::const_iterator citer;
+        typedef pair_vector::const_iterator citer;
 
         oss << "{ ";
         bool fst = true;
         for( citer b(list_.begin( )), e(list_.end( )); b!=e; ++b  ) {
-            std::string res(str( 0, *b ));
+            std::string res(str( 0, *b->get( ) ));
             if( !fst ) {
                 oss << ", ";
             } else {
@@ -427,21 +435,21 @@ public:
     }
 };
 
-lua_object *g_table = NULL;
+lua_object_sptr g_table = NULL;
 
-lua_object * create( lua_State *L, int idx );
+lua_object_sptr create( lua_State *L, int idx );
 
-lua_object * create_table( lua_State *L, int index )
+lua_object_sptr create_table( lua_State *L, int index )
 {
     lua_pushvalue(L, index);
     lua_pushnil(L);
 
-    lua_object_table *new_table = new lua_object_table;
+    std::shared_ptr<lua_object_table> new_table( new lua_object_table );
     while (lua_next(L, -2)) {
 
         lua_pushvalue(L, -2);
-        lua_object_pair *new_pair
-                = new lua_object_pair( create( L, -1 ), create( L, -2 ) );
+        std::shared_ptr<lua_object_pair> new_pair
+                ( new lua_object_pair( create( L, -1 ), create( L, -2 ) ) );
         new_table->push_back( new_pair );
         lua_pop(L, 2);
     }
@@ -451,28 +459,32 @@ lua_object * create_table( lua_State *L, int index )
     return new_table;
 }
 
-lua_object * create( lua_State *L, int idx )
+lua_object_sptr create( lua_State *L, int idx )
 {
     int t = lua_type( L, idx );
     switch( t ) {
     case LUA_TBOOLEAN:
-        return new lua_object_bool( lua_toboolean( L, idx ) );
+        return lua_object_sptr(new lua_object_bool( lua_toboolean( L, idx ) ));
     case LUA_TLIGHTUSERDATA:
-        return new lua_object_light_userdata( lua_touserdata( L, idx ) );
+        return lua_object_sptr(
+                    new lua_object_light_userdata( lua_touserdata( L, idx ) ));
     case LUA_TNUMBER:
-        return new lua_object_number( lua_tonumber( L, idx ) );
+        return lua_object_sptr(
+                    new lua_object_number( lua_tonumber( L, idx ) ));
     case LUA_TSTRING:
-        return new lua_object_string( lua_tostring( L, idx ) );
+        return lua_object_sptr(
+                    new lua_object_string( lua_tostring( L, idx ) ));
     case LUA_TTABLE:
         return g_table = create_table( L, idx );
     case LUA_TFUNCTION:
-        return new lua_object_function( lua_tocfunction( L, idx ) );
+        return lua_object_sptr(
+                    new lua_object_function( lua_tocfunction( L, idx ) ));
 //    case LUA_TUSERDATA:
 //        return "userdata";
 //    case LUA_TTHREAD:
 //        return "thread";
     }
-    return new lua_object_nil;
+    return lua_object_sptr(new lua_object_nil);
 }
 
 class lua_vm {
@@ -625,7 +637,7 @@ int main( ) try
     v.check_call_error(luaL_loadfile(v.state( ), "test.lua"));
     v.check_call_error(lua_pcall(v.state( ), 0, LUA_MULTRET, 0));
 
-    luaL_loadstring(v.state( ), "function fullName(t) print( t, '\\n' ) end");
+    luaL_loadstring(v.state( ), "function fullName(t) print( t, '\\n' ); end");
     lua_pcall(v.state( ), 0, 0, 0);
 
     lua_getglobal(v.state( ), "fullName");
