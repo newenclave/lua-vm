@@ -45,7 +45,7 @@ b = create_table( 2 )
 function test( )
     local c = create_table( 4 )
 end
-collectgarbage( )
+
 
 --a:call( t )
 

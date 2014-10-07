@@ -2,10 +2,11 @@
 #define LUA_WRAPPER_HPP
 
 extern "C" {
-#include "lua.h"
 #include "lualib.h"
 #include "lauxlib.h"
 }
+
+#include "lua-type-wrapper.hpp"
 
 #ifdef LUA_WRAPPER_TOP_NAMESPACE
 
@@ -121,6 +122,20 @@ namespace lua {
             return lua_type( vm_, id );
         }
 
+        int get_type( const char* name, int id = LUA_GLOBALSINDEX ) const
+        {
+            lua_pushstring( vm_, name );
+            lua_rawget( vm_, id );
+            int type = lua_type(vm_, -1);
+            lua_pop(vm_, 1);
+            return type;
+        }
+
+        bool exist( const char* name ) const
+        {
+            return get_type( name ) != LUA_TNIL;
+        }
+
         int get_top( )
         {
             return lua_gettop( vm_ );
@@ -154,20 +169,20 @@ namespace lua {
             lua_settable( vm_, LUA_GLOBALSINDEX );   // ==>
         }
 
-    //    template<typename T>
-    //    T get( int id = -1 )
-    //    {
-    //        if( !lua_type_trait<T>::check( vm_, id ) ) {
-    //            throw std::runtime_error( std::string("bad type '")
-    //                    + lua_type_to_string( lua_type_trait<T>::type_index )
-    //                    + std::string("'. lua type is '")
-    //                    + lua_type_to_string( get_type( id ) )
-    //                    + std::string("'") );
-    //        }
-    //        return lua_type_trait<T>::get( vm_, id );
-    //    }
+        template<typename T>
+        T get( int id = -1 )
+        {
+            typedef types::id_traits<T> traits;
+            if( !traits::check( vm_, id ) ) {
+                throw std::runtime_error( std::string("bad type '")
+                        + lua_type_to_string( traits::type_index )
+                        + std::string("'. lua type is '")
+                        + types::id_to_string( get_type( id ) )
+                        + std::string("'") );
+            }
+            return traits::get( vm_, id );
+        }
     };
-
 }
 
 #ifdef LUA_WRAPPER_TOP_NAMESPACE

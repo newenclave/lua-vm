@@ -10,6 +10,118 @@
 
 #include "lua-wrapper.hpp"
 
+template <int LuaTypeID>
+struct lua_type_id {
+
+    enum { type_index = LuaTypeID };
+    static bool check( lua_State *L, int idx )
+    {
+        int r = lua_type( L, idx );
+        return r == type_index;
+    }
+};
+
+template <typename T>
+struct lua_type_id_integer: public lua_type_id<LUA_TNUMBER> {
+    static T get( lua_State *L, int idx )
+    {
+        return static_cast<T>(lua_tointeger( L, idx ));
+    }
+};
+
+template <typename T>
+struct lua_type_id_numeric: public lua_type_id<LUA_TNUMBER> {
+    static T get( lua_State *L, int idx )
+    {
+        return static_cast<T>(lua_tonumber( L, idx ));
+    }
+};
+
+template <typename T>
+struct lua_type_id_pointer: public lua_type_id<LUA_TLIGHTUSERDATA> {
+    static T get( lua_State *L, int idx )
+    {
+        return static_cast<T>(lua_topointer( L, idx ));
+    }
+};
+
+template <typename T>
+struct lua_type_id_string {
+
+    enum { type_index = LUA_TSTRING };
+    static bool check( lua_State * /*L*/, int /*idx*/ )
+    {
+        return true;
+    }
+
+    static T get( lua_State *L, int idx )
+    {
+        const char *t = lua_tostring( L, idx );
+        return T( t ? t : "<nil>" );
+    }
+};
+
+template <typename CT>
+struct lua_type_trait {
+    enum { type_index = LUA_TNONE };
+};
+
+template <>
+struct lua_type_trait<signed int> : public
+       lua_type_id_integer<signed int> { };
+
+template <>
+struct lua_type_trait<unsigned int> : public
+       lua_type_id_integer<unsigned int> { };
+
+template <>
+struct lua_type_trait<signed long> : public
+       lua_type_id_integer<signed long> { };
+
+template <>
+struct lua_type_trait<unsigned long> : public
+       lua_type_id_integer<unsigned long> { };
+
+template <>
+struct lua_type_trait<signed short> : public
+       lua_type_id_integer<signed short> { };
+
+template <>
+struct lua_type_trait<unsigned short> : public
+       lua_type_id_integer<unsigned short> { };
+
+template <>
+struct lua_type_trait<signed char> : public
+       lua_type_id_integer<signed char> { };
+
+template <>
+struct lua_type_trait<unsigned char> : public
+       lua_type_id_integer<unsigned char> { };
+
+template <>
+struct lua_type_trait<std::string> : public
+       lua_type_id_string<std::string> { };
+
+template <>
+struct lua_type_trait<const char *> : public
+       lua_type_id_string<const char *> { };
+
+template <>
+struct lua_type_trait<float> : public
+       lua_type_id_numeric<float> { };
+
+template <>
+struct lua_type_trait<double> : public
+       lua_type_id_numeric<double> { };
+
+template <>
+struct lua_type_trait<long double> : public
+       lua_type_id_numeric<long double> { };
+
+template <>
+struct lua_type_trait<const void *> : public
+       lua_type_id_pointer<const void *> { };
+
 struct lua_object {
 
     enum {
@@ -538,178 +650,18 @@ lua_object_sptr create( lua_State *L, int idx )
     return lua_object_sptr(new lua_object_nil);
 }
 
-class lua_vm {
-
-    lua_State *vm_;
-    bool       own_;
-
-public:
-
-    enum state_owning {
-         NOT_OWN_STATE = 0
-        ,OWN_STATE     = 1
-    };
-
-    lua_vm( lua_State *vm, state_owning os = NOT_OWN_STATE )
-        :vm_(vm)
-        ,own_(os == OWN_STATE)
-    {
-
-    }
-
-    lua_vm( )
-        :vm_(lua_open( ))
-        ,own_(true)
-    {
-//        luaopen_io(vm_); // provides io.*
-//        luaopen_base(vm_);
-//        luaopen_table(vm_);
-//        luaopen_string(vm_);
-//        luaopen_math(vm_);
-    }
-
-    ~lua_vm( )
-    {
-        if( own_ && vm_ ) {
-            lua_close( vm_ );
-        }
-    }
-
-    lua_State *state( )
-    {
-        return vm_;
-    }
-
-    const lua_State *state( ) const
-    {
-        return vm_;
-    }
-
-    void pop( )
-    {
-        lua_pop( vm_, 1 );
-    }
-
-    void pop( int n )
-    {
-        lua_pop( vm_, n );
-    }
-
-    std::string pop_error( )
-    {
-        std::string res( lua_tostring(vm_, -1) );
-        pop( );
-        return res;
-    }
-
-    void register_call( const char *name, lua_CFunction fn )
-    {
-        lua_register( vm_, name, fn );
-    }
-
-    std::string error( )
-    {
-        std::string res( lua_tostring(vm_, -1) );
-        return res;
-    }
-
-    void check_call_error( int res )
-    {
-        if( 0 != res ) {
-            throw std::runtime_error( pop_error( ) );
-        }
-    }
-
-    void push( bool value )
-    {
-        lua_pushboolean( vm_, value ? 1 : 0 );
-    }
-
-    void push( const char* value )
-    {
-        lua_pushstring( vm_, value );
-    }
-
-    void push( const std::string& value )
-    {
-        lua_pushlstring( vm_, value.c_str( ), value.size( ) );
-    }
-
-    void push( lua_CFunction value )
-    {
-        lua_pushcfunction( vm_, value );
-    }
-
-    template<typename T>
-    void push( T * value )
-    {
-        lua_pushlightuserdata( vm_, reinterpret_cast<void *>( value ) );
-    }
-
-    int get_type( int id = -1 )
-    {
-        return lua_type( vm_, id );
-    }
-
-    int get_top( )
-    {
-        return lua_gettop( vm_ );
-    }
-
-    template <typename T>
-    void set_in_global_table( const char *table_name,
-                              const char *key, T value )
-    {
-        push( table_name );
-        push( table_name );
-
-        lua_gettable( vm_, LUA_GLOBALSINDEX );
-
-        // ==> table name | nil or table
-        if (!lua_istable(vm_, -1))
-        {
-            if (lua_isnoneornil(vm_, -1)) {
-                pop( 1 );
-                lua_newtable( vm_ );
-            }
-            else {
-                lua_pop(vm_, 2);
-                throw std::logic_error( "Not table" );
-            }
-        }
-
-        push( key );               // ==> table name | table | item
-        push( value );             // ==> table name | table | item | value
-        lua_settable( vm_, -3 );   // ==> table name | table
-        lua_settable( vm_, LUA_GLOBALSINDEX );   // ==>
-    }
-
-//    template<typename T>
-//    T get( int id = -1 )
-//    {
-//        if( !lua_type_trait<T>::check( vm_, id ) ) {
-//            throw std::runtime_error( std::string("bad type '")
-//                    + lua_type_to_string( lua_type_trait<T>::type_index )
-//                    + std::string("'. lua type is '")
-//                    + lua_type_to_string( get_type( id ) )
-//                    + std::string("'") );
-//        }
-//        return lua_type_trait<T>::get( vm_, id );
-//    }
-};
-
 static int l_print( lua_State *L )
 {
     int n = lua_gettop( L );
 
-    lua_vm tvm( L );
+    lua::state tvm( L );
 
     if( n < 0 ) {
         n = ( (n * -1) + 1 );
     }
 
     for ( int b = 1; b <= n; ++b ) {
-        std::cout << create( tvm.state( ), b )->str( );
+        std::cout << create( tvm.get_state( ), b )->str( );
     }
 
     std::cout << "\n";
@@ -720,7 +672,7 @@ static int l_print( lua_State *L )
 
 int main( ) try
 {
-    lua_vm v;
+    lua::state v;
     v.register_call( "print", l_print );
 
 //    lua_pushcfunction(v.state( ), l_sin, 1);
@@ -728,8 +680,8 @@ int main( ) try
 
     v.set_in_global_table( "globt", "counter", &v );
 
-    v.check_call_error(luaL_loadfile(v.state( ), "test.lua"));
-    v.check_call_error(lua_pcall(v.state( ), 0, LUA_MULTRET, 0));
+    v.check_call_error(luaL_loadfile(v.get_state( ), "test.lua"));
+    v.check_call_error(lua_pcall(v.get_state( ), 0, LUA_MULTRET, 0));
 
     return 0;
 } catch( const std::exception &ex ) {
