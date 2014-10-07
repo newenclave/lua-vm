@@ -8,11 +8,7 @@
 
 #include <memory>
 
-extern "C" {
-#include "lua.h"
-#include "lualib.h"
-#include "lauxlib.h"
-}
+#include "lua-wrapper.hpp"
 
 struct lua_object {
 
@@ -258,8 +254,16 @@ class lua_object_string: public lua_object {
 
 public:
 
-    lua_object_string( std::string cont )
+    lua_object_string( const std::string &cont )
         :cont_(cont)
+    { }
+
+    lua_object_string( const char * cont )
+        :cont_(cont)
+    { }
+
+    lua_object_string( const char * cont, size_t len )
+        :cont_(cont, len)
     { }
 
     virtual int type_id( ) const
@@ -499,6 +503,13 @@ lua_object_sptr create_table( lua_State *L, int index )
     return new_table;
 }
 
+lua_object_sptr create_string( lua_State *L, int idx )
+{
+    size_t length = 0;
+    const char *ptr = lua_tolstring( L, idx, &length );
+    return lua_object_sptr( new lua_object_string( ptr, length ) );
+}
+
 lua_object_sptr create( lua_State *L, int idx )
 {
     int t = lua_type( L, idx );
@@ -513,8 +524,7 @@ lua_object_sptr create( lua_State *L, int idx )
         return lua_object_sptr(
                     new lua_object_number( lua_tonumber( L, idx ) ));
     case LUA_TSTRING:
-        return lua_object_sptr(
-                    new lua_object_string( lua_tostring( L, idx ) ));
+        return create_string( L, idx );
     case LUA_TFUNCTION:
         return lua_object_sptr(
                     new lua_object_function( lua_tocfunction( L, idx ) ));
@@ -543,12 +553,20 @@ public:
     lua_vm( lua_State *vm, state_owning os = NOT_OWN_STATE )
         :vm_(vm)
         ,own_(os == OWN_STATE)
-    { }
+    {
+
+    }
 
     lua_vm( )
         :vm_(lua_open( ))
         ,own_(true)
-    { }
+    {
+//        luaopen_io(vm_); // provides io.*
+//        luaopen_base(vm_);
+//        luaopen_table(vm_);
+//        luaopen_string(vm_);
+//        luaopen_math(vm_);
+    }
 
     ~lua_vm( )
     {
@@ -614,7 +632,7 @@ public:
 
     void push( const std::string& value )
     {
-        lua_pushstring( vm_, value.c_str( ) );
+        lua_pushlstring( vm_, value.c_str( ), value.size( ) );
     }
 
     void push( lua_CFunction value )
@@ -712,14 +730,6 @@ int main( ) try
 
     v.check_call_error(luaL_loadfile(v.state( ), "test.lua"));
     v.check_call_error(lua_pcall(v.state( ), 0, LUA_MULTRET, 0));
-
-    luaL_loadstring(v.state( ), "function fullName(t) print( t, '\\n' ); end");
-    lua_pcall(v.state( ), 0, 0, 0);
-
-    lua_getglobal(v.state( ), "fullName");
-    g_table->push( v.state( ) );
-
-    lua_pcall(v.state( ), 1, 0, 0);
 
     return 0;
 } catch( const std::exception &ex ) {

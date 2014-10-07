@@ -20,10 +20,33 @@ local t = {
          ,[1] = 'one'
          ,[2] = 'two'
     }
-    ,tg = globt
+    ,tg = globt.str
 }
 
-a = t;
-a.name = 'a!!!!!!!!!'
+function create_table( id )
 
-print( t )
+    local class = {
+         call = print
+        ,id   = id
+    }
+
+    class.get_id = function( c )
+        return c.id
+    end
+    class.__gc = function( c )
+        print(c.id, ' deleted')
+    end
+    return class
+end
+
+a = create_table( 1 )
+b = create_table( 2 )
+
+function test( )
+    local c = create_table( 4 )
+end
+collectgarbage( )
+
+--a:call( t )
+
+print( a:get_id( ), ' ', b:get_id( ) )
