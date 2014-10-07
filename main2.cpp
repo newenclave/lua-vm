@@ -29,6 +29,7 @@ struct lua_object {
         ,TYPE_THREAD        = LUA_TTHREAD
         ,TYPE_LOCAL_INDEX   = 1000
         ,TYPE_PAIR          = TYPE_LOCAL_INDEX + 1
+        ,TYPE_INTEGER       = TYPE_LOCAL_INDEX + 2
     };
 
     virtual ~lua_object( ) { }
@@ -179,7 +180,7 @@ class lua_object_number: public lua_object {
 
 public:
 
-    lua_object_number( lua_Number num )
+    explicit lua_object_number( lua_Number num )
         :num_(num)
     { }
 
@@ -208,6 +209,45 @@ public:
     lua_Number num( ) const
     {
         return num_;
+    }
+
+};
+
+class lua_object_integer: public lua_object {
+
+    lua_Integer num_;
+
+public:
+
+    explicit lua_object_integer( lua_Integer num )
+        :num_(num)
+    { }
+
+    virtual int type_id( ) const
+    {
+        return lua_object::TYPE_INTEGER;
+    }
+
+    virtual lua_object *clone( ) const
+    {
+        return new lua_object_integer( num_ );
+    }
+
+    void push( lua_State *L ) const
+    {
+        lua_pushinteger( L, num_ );
+    }
+
+    std::string str( ) const
+    {
+        std::ostringstream oss;
+        oss << num_;
+        return oss.str( );
+    }
+
+    lua_Number num( ) const
+    {
+        return static_cast<lua_Number>( num_ );
     }
 
 };
@@ -244,7 +284,7 @@ public:
 
     std::string str( ) const
     {
-        return cont_;
+        return std::string( "'" ).append( cont_ ).append( "'" );
     }
 
     lua_Number num( ) const
