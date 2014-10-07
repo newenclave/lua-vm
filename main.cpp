@@ -276,28 +276,40 @@ public:
     }
 };
 
-void print_table( lua_State *L, int idx )
+void print_table( lua_State *L, int index )
 {
-//    lua_pushvalue( L, idx ); // stack: map
-
-//    lua_pushnil( L );          // stack: map nil
-
-    std::string key_ = lua_tostring( L, idx - 3 );
-    std::string val_ = lua_tostring( L, idx - 2 );
-
-    std::cout << key_ << " = " << val_ << "\n";
-
-//    while( lua_next(L, idx - 1) )   // stack: map key value
-//    {
-//        std::string key_ = lua_tostring( L, idx - 1 );
-//        std::string val_ = lua_tostring( L, idx  );
-
-
-//        idx += 1;
-//        //lua_pop(L, 1); // stack: map key
-//    }
-    // stack: map
-//    lua_pop(L, 1); // stack:
+    // Push another reference to the table on top of the stack (so we know
+    // where it is, and this function can work for negative, positive and
+    // pseudo indices
+    lua_pushvalue(L, index);
+    // stack now contains: -1 => table
+    lua_pushnil(L);
+    // stack now contains: -1 => nil; -2 => table
+    while (lua_next(L, -2))
+    {
+        // stack now contains: -1 => value; -2 => key; -3 => table
+        // copy the key so that lua_tostring does not modify the original
+        lua_pushvalue(L, -2);
+        // stack now contains: -1 => key; -2 => value; -3 => key; -4 => table
+        const char *key = lua_tostring(L, -1);
+        const char *value = lua_tostring(L, -2);
+        if( lua_istable( L, -2 ) ) {
+            std::cout << "new table: " << key << "\n";
+            print_table( L, -2 );
+        } else {
+            std::cout << key << " -> "
+                      << (value ? value : "nil")
+                      << "\n";
+        }
+        // pop value + copy of key, leaving original key
+        lua_pop(L, 2);
+        // stack now contains: -1 => key; -2 => table
+    }
+    // stack now contains: -1 => table (when lua_next returns 0 it pops the key
+    // but does not push anything.)
+    // Pop table
+    lua_pop(L, 1);
+    // Stack is now the same as it was on entry to this function
 }
 
 static int l_print( lua_State *L )
@@ -326,7 +338,7 @@ static int l_print( lua_State *L )
     return 0;
 }
 
-int main( ) try
+int main0( ) try
 {
     lua_vm v;
     v.register_call( "print", l_print );
