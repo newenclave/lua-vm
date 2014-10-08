@@ -71,7 +71,8 @@ namespace lua {
 
         std::string pop_error( )
         {
-            std::string res( lua_tostring(vm_, -1) );
+            const char *str = lua_tostring(vm_, -1);
+            std::string res( str ? str : "Unknown error" );
             pop( );
             return res;
         }
@@ -247,6 +248,25 @@ namespace lua {
             lua_pop( vm_, 2 );
             return result;
         }
+
+        int exec_function( const char* func )
+        {
+            push( func );
+            lua_gettable(vm_, LUA_GLOBALSINDEX);
+            int rc = lua_pcall( vm_, 0, LUA_MULTRET, 0 );
+            pop( 1 );
+            return rc;
+        }
+
+        int load_file( const char *path )
+        {
+            int res = luaL_loadfile( vm_, path );
+            if( 0 == res ) {
+                res = lua_pcall( vm_, 0, LUA_MULTRET, 0);
+            }
+            return res;
+        }
+
     };
 }
 

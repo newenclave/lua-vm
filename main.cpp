@@ -196,10 +196,11 @@ int main( ) try
     //    v.set_in_table2( "globt.tress", "counter", &v );
 //    v.set_in_table2( "globt.tress", "counter2", &v );
 
-    v.check_call_error(luaL_loadfile(v.get_state( ), "test.lua"));
-    v.check_call_error(lua_pcall(v.get_state( ), 0, LUA_MULTRET, 0));
+    v.check_call_error(v.load_file( "test.lua" ));
+    v.check_call_error(v.exec_function( "main" ));
 
     return 0;
+
 } catch( const std::exception &ex ) {
     std::cerr << "Error: " << ex.what( ) << "\n";
     return 1;

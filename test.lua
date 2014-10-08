@@ -49,6 +49,10 @@ end
 
 --a:call( t )
 
-print( global_table )
 
-global_table.registry.test:call( 'hello!' )
+function main( argv )
+    print( global_table )
+    global_table.registry.test:call( argv )
+    return 1
+end
+
