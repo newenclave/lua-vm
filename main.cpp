@@ -169,6 +169,7 @@ void set_in_table( lua_State *vm_,
     lua_setglobal( vm_, tn.c_str( ) );
 }
 
+
 int main( ) try
 {
     lua::state v;
