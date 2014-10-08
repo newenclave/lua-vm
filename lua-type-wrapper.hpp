@@ -50,9 +50,31 @@ namespace lua { namespace types {
 
     template <typename T>
     struct id_integer: public base_id<LUA_TNUMBER> {
+
+        static bool check( lua_State *L, int idx )
+        {
+            int r = lua_type( L, idx );
+            return r == LUA_TNUMBER  ||
+                   r == LUA_TBOOLEAN ||
+                   r == LUA_TNIL     ||
+                   r == LUA_TLIGHTUSERDATA;
+        }
+
         static T get( lua_State *L, int idx )
         {
-            return static_cast<T>(lua_tointeger( L, idx ));
+            int r = lua_type( L, idx );
+            switch (r) {
+            case LUA_TNUMBER:
+                return static_cast<T>(lua_tointeger( L, idx ));
+            case LUA_TBOOLEAN:
+                return static_cast<T>(lua_toboolean( L, idx ) ? 1 : 0);
+            case LUA_TNIL:
+                return static_cast<T>( 0 );
+            case LUA_TLIGHTUSERDATA:
+                return static_cast<T>((LUA_INTEGER)(lua_topointer( L, idx )));
+            default:
+                break;
+            }
         }
     };
 

@@ -94,82 +94,6 @@ int l_print( lua_State *L )
     return 0;
 }
 
-void get_create_table( lua_State *vm_, int id )
-{
-
-}
-
-template <typename T>
-void set_in_table2( lua_State *vm_,
-                   const char *table_name,
-                   const char *key, T value )
-{
-    lua::state s( vm_ );
-
-    // ==> table name | table
-    size_t len = 0;
-    const char * p = table_name;
-    while( (*p != '\0') && (*p != '.') ) {
-        ++len;
-        p++;
-    }
-
-    std::string tn( table_name, len );
-    lua_getfield( vm_, -1, tn.c_str( ) );
-
-    if ( !lua_istable( vm_, -1 ) ) {
-        if ( lua_isnoneornil( vm_, -1 ) ) {
-            lua_newtable( vm_ );
-        }
-    }
-
-    if( !*p ) {
-        lua_pushstring( vm_, key ); // ==> table name | table | item
-        s.push( value );            // ==> table name | table | item | value
-        lua_settable( vm_, -3 );    // ==> table name | table
-    } else {
-        //set_in_table2( vm_, p + 1, key, value );
-    }
-}
-
-
-template <typename T>
-void set_in_table( lua_State *vm_,
-                   const char *table_name,
-                   const char *key, T value )
-{
-    lua::state s( vm_ );
-
-    size_t len = 0;
-    const char * p = table_name;
-    while( (*p != '\0') && (*p != '.') ) {
-        ++len;
-        p++;
-    }
-
-    std::string tn( table_name, len );
-    lua_getglobal( vm_, tn.c_str( ) );
-
-    // ==> table name | nil or table
-    if ( !lua_istable( vm_, -1 ) ) {
-        if ( lua_isnoneornil( vm_, -1 ) ) {
-            lua_newtable( vm_ );
-        }
-    }
-
-    // ==> table name | table
-    if( !*p ) {
-        lua_pushstring( vm_, key ); // ==> table name | table | item
-        s.push( value );            // ==> table name | table | item | value
-        lua_settable( vm_, -3 );    // ==> table name | table
-    } else {
-        lua_pushstring( vm_, tn.c_str( ) ); // ==> table name | table | item
-        set_in_table2( vm_, p + 1, key, value  );
-        //lua_settable( vm_, -3 );    // ==> table name | table
-    }
-    lua_setglobal( vm_, tn.c_str( ) );
-}
-
 typedef std::map<int, void *> map_type;
 
 int test_call( lua_State *L )
@@ -177,7 +101,7 @@ int test_call( lua_State *L )
     lua::state v( L );
     int data = v.get<int>( );
 
-    const void * mm = v.get_from_global<const void *>( "global_table", "map" );
+    unsigned long mm = v.get_from_global<unsigned long>( "global_table", "map" );
     if( mm ) {
         map_type *m((map_type *)mm);
         std::cout << "Parameters: " << (*m)[data] << "\n";
