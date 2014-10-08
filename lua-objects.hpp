@@ -506,6 +506,11 @@ namespace lua { namespace objects {
         return new table;
     }
 
+    inline nil * new_nil(  )
+    {
+        return new nil;
+    }
+
     inline string * new_string( const char *str )
     {
         return new string( str );

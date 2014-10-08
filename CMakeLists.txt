@@ -15,6 +15,8 @@ add_executable( ${PROJECT_NAME} ${src_dirs} )
 set( src_dirs )
 set( src )
 
+set( LUA_FOUND 0 )
+
 if( LUA_SRC )
 
     add_subdirectory( lua-build )
@@ -23,7 +25,7 @@ if( LUA_SRC )
     target_link_libraries( ${PROJECT_NAME} ${LUA_LIBRARIES} )
     add_dependencies( ${PROJECT_NAME} lua_lib )
 
-    message( "lua: include: " ${LUA_INCLUDE_DIR} " libs: " ${LUA_LIBRARIES} )
+    set( LUA_FOUND 1 )
 
 else( )
 
@@ -31,14 +33,16 @@ else( )
 
     if( ${LUA51_FOUND} )
 
-    include_directories( ${LUA_INCLUDE_DIR} )
-    target_link_libraries( ${PROJECT_NAME} ${LUA_LIBRARIES} )
+        set( LUA_FOUND 1 )
+        include_directories( ${LUA_INCLUDE_DIR} )
+        target_link_libraries( ${PROJECT_NAME} ${LUA_LIBRARIES} )
 
     else( )
 
         find_package( Lua50 )
 
         if( ${LUA50_FOUND} )
+            set( LUA_FOUND 1 )
             include_directories( ${LUA_INCLUDE_DIR} )
             target_link_libraries( ${PROJECT_NAME} ${LUA_LIBRARIES} )
         endif( )

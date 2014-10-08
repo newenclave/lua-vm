@@ -134,7 +134,7 @@ int main( ) try
             lo::new_string( "second" ),
             lo::new_string( "2" )
         )->add(
-            lo::new_string( "call" ),
+            lo::new_string( "" ),
             lo::new_function( &l_print )
         )
     )->add(
