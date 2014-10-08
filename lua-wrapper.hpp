@@ -239,8 +239,10 @@ namespace lua {
                 throw std::logic_error( "Not a table" );
             }
 
-            push( key );
-            lua_gettable( vm_, -2 );
+            //push( key );
+            //lua_gettable( vm_, -2 );
+
+            lua_getfield( vm_, -1, key );
 
             T result;
             try {
@@ -251,7 +253,6 @@ namespace lua {
             }
 
             lua_pop( vm_, 2 );
-            //lua_pop( vm_, 1 );
             return result;
         }
 

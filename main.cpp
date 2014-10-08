@@ -191,6 +191,11 @@ int main( ) try
 
     v.set_object_in_global( "global_table", "registry", *t );
 
+    v.set_in_global( "global_table", "data", 100.090 );
+    double d = v.get_from_global<double>( "global_table", "data");
+
+    std::cout << "double " << d << "\n";
+
     v.check_call_error(v.load_file( "test.lua" ));
     v.check_call_error(v.exec_function( "main", *t ));
 
