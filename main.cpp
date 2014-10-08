@@ -175,7 +175,8 @@ int main( ) try
     v.register_call( "print", l_print );
 
     std::shared_ptr<lo::table> t( lo::create_table( ) );
-    t->add( lo::create_string( "test" ), lo::create_table(  )->add(
+    t->add( lo::create_string( "test" ),
+        lo::create_table(  )->add(
             lo::create_string( "internal" ),
             lo::create_string( "buff" )
         )->add(
