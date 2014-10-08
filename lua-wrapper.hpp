@@ -258,6 +258,16 @@ namespace lua {
             return rc;
         }
 
+        int exec_function( const char* func, const objects::base &bo )
+        {
+            push( func );
+            lua_gettable(vm_, LUA_GLOBALSINDEX);
+            bo.push( vm_ );
+            int rc = lua_pcall( vm_, 1, LUA_MULTRET, 0 );
+            pop( 1 );
+            return rc;
+        }
+
         int load_file( const char *path )
         {
             int res = luaL_loadfile( vm_, path );

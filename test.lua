@@ -51,8 +51,6 @@ end
 
 
 function main( argv )
-    print( global_table )
-    global_table.registry.test:call( argv )
-    return 1
+    print( argv )
 end
 

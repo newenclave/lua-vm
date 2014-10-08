@@ -197,7 +197,7 @@ int main( ) try
 //    v.set_in_table2( "globt.tress", "counter2", &v );
 
     v.check_call_error(v.load_file( "test.lua" ));
-    v.check_call_error(v.exec_function( "main" ));
+    v.check_call_error(v.exec_function( "main", *t ));
 
     return 0;
 
