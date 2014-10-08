@@ -3,6 +3,8 @@
 
 #include <stdexcept>
 
+#include <stdlib.h>
+
 extern "C" {
 #include "lualib.h"
 #include "lauxlib.h"
@@ -28,8 +30,8 @@ namespace lua {
         lua_State *vm_;
         bool       own_;
 
-
-        static void *def_alloc(void *ud, void *ptr, size_t osize, size_t nsize)
+        static void *def_alloc( void *ud, void *ptr,
+                                size_t osize, size_t nsize )
         {
             void *tmp = NULL;
 
@@ -39,10 +41,10 @@ namespace lua {
                 } else {
                     tmp = ptr;
                 }
-            } else if ( nsize ) {
-                tmp = malloc ( nsize );
-            } else if (nsize == 0) {
-                free (ptr);
+            } else if( nsize ) {
+                tmp = malloc( nsize );
+            } else if( nsize == 0 ) {
+                free( ptr );
                 tmp = NULL;
             }
             return tmp;
@@ -187,7 +189,6 @@ namespace lua {
         {
             lua_getglobal( vm_, table_name );
 
-            // ==> table name | nil or table
             if ( !lua_istable( vm_, -1 ) ) {
                 if ( lua_isnoneornil( vm_, -1 ) ) {
                     pop( 1 );
@@ -198,9 +199,9 @@ namespace lua {
                 }
             }
 
-            push( key );             // ==> table name | table | item
-            push( value );           // ==> table name | table | item | value
-            lua_settable( vm_, -3 ); // ==> table name | table
+            push( key );
+            push( value );
+            lua_settable( vm_, -3 );
 
             lua_setglobal( vm_, table_name );
         }
@@ -210,7 +211,6 @@ namespace lua {
         {
             lua_getglobal( vm_, table_name );
 
-            // ==> table name | nil or table
             if ( !lua_istable( vm_, -1 ) ) {
                 if ( lua_isnoneornil( vm_, -1 ) ) {
                     pop( 1 );
@@ -239,8 +239,8 @@ namespace lua {
                 throw std::logic_error( "Not a table" );
             }
 
-            push( key );               // ==> table | key
-            lua_gettable( vm_, -2 );   // ==> table | value
+            push( key );
+            lua_gettable( vm_, -2 );
 
             T result;
             try {
@@ -278,7 +278,6 @@ namespace lua {
             }
             return res;
         }
-
     };
 }
 
