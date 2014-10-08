@@ -114,12 +114,10 @@ void set_in_table2( lua_State *vm_,
     }
 
     std::string tn( table_name, len );
-
     lua_getfield( vm_, -1, tn.c_str( ) );
 
     if ( !lua_istable( vm_, -1 ) ) {
         if ( lua_isnoneornil( vm_, -1 ) ) {
-            lua_pushstring( vm_, tn.c_str( ) );
             lua_newtable( vm_ );
         }
     }
@@ -129,7 +127,7 @@ void set_in_table2( lua_State *vm_,
         s.push( value );            // ==> table name | table | item | value
         lua_settable( vm_, -3 );    // ==> table name | table
     } else {
-        set_in_table2( vm_, p + 1, key, value );
+        //set_in_table2( vm_, p + 1, key, value );
     }
 }
 
@@ -164,17 +162,36 @@ void set_in_table( lua_State *vm_,
         s.push( value );            // ==> table name | table | item | value
         lua_settable( vm_, -3 );    // ==> table name | table
     } else {
-        set_in_table2( vm_, p + 1, key, value );
+        lua_pushstring( vm_, tn.c_str( ) ); // ==> table name | table | item
+        set_in_table2( vm_, p + 1, key, value  );
+        //lua_settable( vm_, -3 );    // ==> table name | table
     }
     lua_setglobal( vm_, tn.c_str( ) );
 }
+
+
 
 int main( ) try
 {
     lua::state v;
     v.register_call( "print", l_print );
 
-    set_in_table( v.get_state( ), "globt.r", "test", 123 );
+    std::shared_ptr<lo::table> t( lo::create_table( ) );
+    t->add( lo::create_string( "test" ), lo::create_table(  )->add(
+            lo::create_string( "internal" ),
+            lo::create_string( "buff" )
+        )->add(
+            lo::create_string( "second" ),
+            lo::create_string( "2" )
+        )->add(
+            lo::create_string( "call" ),
+            lo::create_function( l_print )
+        )
+    );
+
+    v.set_object_in_global( "global_table", "registry", *t );
+
+//    set_in_table( v.get_state( ), "globt.r", "test", 123 );
 
     //    v.set_in_table2( "globt.tress", "counter", &v );
 //    v.set_in_table2( "globt.tress", "counter2", &v );

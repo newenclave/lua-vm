@@ -49,4 +49,6 @@ end
 
 --a:call( t )
 
-print( globt )
+print( global_table )
+
+global_table.registry.test:call( 'hello!' )

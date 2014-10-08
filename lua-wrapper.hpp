@@ -9,6 +9,7 @@ extern "C" {
 }
 
 #include "lua-type-wrapper.hpp"
+#include "lua-objects.hpp"
 
 #ifdef LUA_WRAPPER_TOP_NAMESPACE
 
@@ -190,6 +191,31 @@ namespace lua {
 
             push( key );             // ==> table name | table | item
             push( value );           // ==> table name | table | item | value
+            lua_settable( vm_, -3 ); // ==> table name | table
+            lua_settable( vm_, LUA_GLOBALSINDEX ); // ==>
+        }
+
+        void set_object_in_global( const char *table_name,
+                                   const char *key, const objects::base &bo )
+        {
+            push( table_name );
+            push( table_name );
+
+            lua_gettable( vm_, LUA_GLOBALSINDEX );
+
+            // ==> table name | nil or table
+            if ( !lua_istable( vm_, -1 ) ) {
+                if ( lua_isnoneornil( vm_, -1 ) ) {
+                    pop( 1 );
+                    lua_newtable( vm_ );
+                } else {
+                    lua_pop(vm_, 2);
+                    throw std::logic_error( "Not a table" );
+                }
+            }
+
+            push( key );
+            bo.push( vm_ );
             lua_settable( vm_, -3 ); // ==> table name | table
             lua_settable( vm_, LUA_GLOBALSINDEX ); // ==>
         }

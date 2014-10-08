@@ -405,6 +405,18 @@ namespace lua { namespace objects {
             list_.push_back( val );
         }
 
+        table * add( pair *p )
+        {
+            push_back( pair_sptr( p ) );
+            return this;
+        }
+
+        table * add( base *k, base *v )
+        {
+            push_back( pair_sptr(new pair( base_sptr(k), base_sptr(v) ) ) );
+            return this;
+        }
+
         virtual base *clone( ) const
         {
             return new table( *this );
@@ -483,6 +495,36 @@ namespace lua { namespace objects {
             return oss.str( );
         }
     };
+
+    inline pair * create_pair( base *k, base *v )
+    {
+        return new pair( base_sptr(k), base_sptr(v) );
+    }
+
+    inline table * create_table(  )
+    {
+        return new table;
+    }
+
+    inline string * create_string( const char *str )
+    {
+        return new string( str );
+    }
+
+    inline string * create_string( const char *str, size_t length )
+    {
+        return new string( str, length );
+    }
+
+    inline string * create_string( const std::string &str )
+    {
+        return new string( str );
+    }
+
+    inline function * create_function( lua_CFunction func )
+    {
+        return new function( func );
+    }
 
 }}
 
