@@ -496,32 +496,32 @@ namespace lua { namespace objects {
         }
     };
 
-    inline pair * create_pair( base *k, base *v )
+    inline pair * new_pair( base *k, base *v )
     {
         return new pair( base_sptr(k), base_sptr(v) );
     }
 
-    inline table * create_table(  )
+    inline table * new_table(  )
     {
         return new table;
     }
 
-    inline string * create_string( const char *str )
+    inline string * new_string( const char *str )
     {
         return new string( str );
     }
 
-    inline string * create_string( const char *str, size_t length )
+    inline string * new_string( const char *str, size_t length )
     {
         return new string( str, length );
     }
 
-    inline string * create_string( const std::string &str )
+    inline string * new_string( const std::string &str )
     {
         return new string( str );
     }
 
-    inline function * create_function( lua_CFunction func )
+    inline function * new_function( lua_CFunction func )
     {
         return new function( func );
     }

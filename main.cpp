@@ -175,17 +175,17 @@ int main( ) try
     lua::state v;
     v.register_call( "print", l_print );
 
-    std::shared_ptr<lo::table> t( lo::create_table( ) );
-    t->add( lo::create_string( "test" ),
-        lo::create_table(  )->add(
-            lo::create_string( "internal" ),
-            lo::create_string( "buff" )
+    std::shared_ptr<lo::table> t( lo::new_table( ) );
+    t->add( lo::new_string( "test" ),
+        lo::new_table(  )->add(
+            lo::new_string( "internal" ),
+            lo::new_string( "buff" )
         )->add(
-            lo::create_string( "second" ),
-            lo::create_string( "2" )
+            lo::new_string( "second" ),
+            lo::new_string( "2" )
         )->add(
-            lo::create_string( "call" ),
-            lo::create_function( l_print )
+            lo::new_string( "call" ),
+            lo::new_function( l_print )
         )
     );
 
