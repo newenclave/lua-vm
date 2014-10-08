@@ -264,7 +264,7 @@ namespace lua {
             lua_gettable(vm_, LUA_GLOBALSINDEX);
             bo.push( vm_ );
             int rc = lua_pcall( vm_, 1, LUA_MULTRET, 0 );
-            pop( 1 );
+
             return rc;
         }
 

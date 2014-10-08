@@ -199,6 +199,8 @@ int main( ) try
     v.check_call_error(v.load_file( "test.lua" ));
     v.check_call_error(v.exec_function( "main", *t ));
 
+    l_print( v.get_state( ) );
+
     return 0;
 
 } catch( const std::exception &ex ) {
