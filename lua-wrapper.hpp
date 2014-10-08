@@ -169,6 +169,11 @@ namespace lua {
             return lua_gettop( vm_ );
         }
 
+        bool none_or_nil( int id = -1 ) const
+        {
+            lua_isnoneornil( vm_, -1 );
+        }
+
         template<typename T>
         T get( int id = -1 )
         {
