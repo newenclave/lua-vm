@@ -12,24 +12,39 @@ endforeach(dir)
 
 add_executable( ${PROJECT_NAME} ${src_dirs} )
 
-find_package( Lua51 )
+set( src_dirs )
+set( src )
 
-if( ${LUA51_FOUND} )
+if( LUA_SRC )
 
-include_directories( ${LUA_INCLUDE_DIR} )
-target_link_libraries( ${PROJECT_NAME} ${LUA_LIBRARIES} )
+    add_subdirectory( lua-build )
+
+    include_directories( ${LUA_INCLUDE_DIR} )
+    target_link_libraries( ${PROJECT_NAME} ${LUA_LIBRARIES} )
+    add_dependencies( ${PROJECT_NAME} lua_lib )
+
+    message( "lua: include: " ${LUA_INCLUDE_DIR} " libs: " ${LUA_LIBRARIES} )
 
 else( )
 
-    find_package( Lua50 )
+    find_package( Lua51 )
 
-    if( ${LUA50_FOUND} )
-        include_directories( ${LUA_INCLUDE_DIR} )
-        target_link_libraries( ${PROJECT_NAME} ${LUA_LIBRARIES} )
+    if( ${LUA51_FOUND} )
+
+    include_directories( ${LUA_INCLUDE_DIR} )
+    target_link_libraries( ${PROJECT_NAME} ${LUA_LIBRARIES} )
+
+    else( )
+
+        find_package( Lua50 )
+
+        if( ${LUA50_FOUND} )
+            include_directories( ${LUA_INCLUDE_DIR} )
+            target_link_libraries( ${PROJECT_NAME} ${LUA_LIBRARIES} )
+        endif( )
+
     endif( )
 
 endif( )
 
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-
-message( ${LUA_LIBRARIES} )

@@ -169,8 +169,6 @@ void set_in_table( lua_State *vm_,
     lua_setglobal( vm_, tn.c_str( ) );
 }
 
-
-
 int main( ) try
 {
     lua::state v;
@@ -195,6 +193,9 @@ int main( ) try
 
     //    v.set_in_table2( "globt.tress", "counter", &v );
 //    v.set_in_table2( "globt.tress", "counter2", &v );
+
+    v.set_in_global( "global_table", "data", 100.0 );
+    double d = v.get_from_global<double>( "global_table", "data");
 
     v.check_call_error(v.load_file( "test.lua" ));
     v.check_call_error(v.exec_function( "main", *t ));

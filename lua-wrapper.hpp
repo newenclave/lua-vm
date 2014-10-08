@@ -6,7 +6,12 @@
 extern "C" {
 #include "lualib.h"
 #include "lauxlib.h"
+#include "lua.h"
 }
+
+#if (LUA_VERSION_NUM < 502)
+#error "Lua version it too old; Use 5.2"
+#endif
 
 #include "lua-type-wrapper.hpp"
 #include "lua-objects.hpp"
@@ -23,6 +28,26 @@ namespace lua {
         lua_State *vm_;
         bool       own_;
 
+
+        static void *def_alloc(void *ud, void *ptr, size_t osize, size_t nsize)
+        {
+            void *tmp = NULL;
+
+            if ( osize && nsize && ptr ) {
+                if ( osize < nsize ) {
+                    tmp = realloc (ptr, nsize);
+                } else {
+                    tmp = ptr;
+                }
+            } else if ( nsize ) {
+                tmp = malloc ( nsize );
+            } else if (nsize == 0) {
+                free (ptr);
+                tmp = NULL;
+            }
+            return tmp;
+        }
+
     public:
 
         enum state_owning {
@@ -38,7 +63,7 @@ namespace lua {
         }
 
         state( )
-            :vm_(lua_open( ))
+            :vm_(lua_newstate( def_alloc, 0 ))
             ,own_(true)
         { }
 
@@ -137,20 +162,6 @@ namespace lua {
             return lua_type( vm_, id );
         }
 
-        int get_type( const char* name, int id = LUA_GLOBALSINDEX ) const
-        {
-            lua_pushstring( vm_, name );
-            lua_rawget( vm_, id );
-            int type = lua_type(vm_, -1);
-            lua_pop(vm_, 1);
-            return type;
-        }
-
-        bool exist( const char* name ) const
-        {
-            return get_type( name ) != LUA_TNIL;
-        }
-
         int get_top( )
         {
             return lua_gettop( vm_ );
@@ -162,7 +173,7 @@ namespace lua {
             typedef types::id_traits<T> traits;
             if( !traits::check( vm_, id ) ) {
                 throw std::runtime_error( std::string("bad type '")
-                        + lua_type_to_string( traits::type_index )
+                        + types::id_to_string( traits::type_index )
                         + std::string("'. lua type is '")
                         + types::id_to_string( get_type( id ) )
                         + std::string("'") );
@@ -174,10 +185,7 @@ namespace lua {
         void set_in_global( const char *table_name,
                             const char *key, T value )
         {
-            push( table_name );
-            push( table_name );
-
-            lua_gettable( vm_, LUA_GLOBALSINDEX );
+            lua_getglobal( vm_, table_name );
 
             // ==> table name | nil or table
             if ( !lua_istable( vm_, -1 ) ) {
@@ -193,16 +201,14 @@ namespace lua {
             push( key );             // ==> table name | table | item
             push( value );           // ==> table name | table | item | value
             lua_settable( vm_, -3 ); // ==> table name | table
-            lua_settable( vm_, LUA_GLOBALSINDEX ); // ==>
+
+            lua_setglobal( vm_, table_name );
         }
 
         void set_object_in_global( const char *table_name,
                                    const char *key, const objects::base &bo )
         {
-            push( table_name );
-            push( table_name );
-
-            lua_gettable( vm_, LUA_GLOBALSINDEX );
+            lua_getglobal( vm_, table_name );
 
             // ==> table name | nil or table
             if ( !lua_istable( vm_, -1 ) ) {
@@ -217,17 +223,16 @@ namespace lua {
 
             push( key );
             bo.push( vm_ );
-            lua_settable( vm_, -3 ); // ==> table name | table
-            lua_settable( vm_, LUA_GLOBALSINDEX ); // ==>
+            lua_settable( vm_, -3 );
+
+            lua_setglobal( vm_, table_name );
         }
 
         template<typename T>
         T get_from_global( const char* table_name,
                            const char* key )
         {
-            push( table_name );
-
-            lua_gettable( vm_, LUA_GLOBALSINDEX ); // ==> nil or table
+            lua_getglobal( vm_, table_name );
 
             if ( !lua_istable( vm_, -1 ) ) {
                 lua_pop( vm_, 1 );
@@ -246,25 +251,22 @@ namespace lua {
             }
 
             lua_pop( vm_, 2 );
+            //lua_pop( vm_, 1 );
             return result;
         }
 
         int exec_function( const char* func )
         {
-            push( func );
-            lua_gettable(vm_, LUA_GLOBALSINDEX);
+            lua_getglobal( vm_, func );
             int rc = lua_pcall( vm_, 0, LUA_MULTRET, 0 );
-            pop( 1 );
             return rc;
         }
 
         int exec_function( const char* func, const objects::base &bo )
         {
-            push( func );
-            lua_gettable(vm_, LUA_GLOBALSINDEX);
+            lua_getglobal( vm_, func );
             bo.push( vm_ );
             int rc = lua_pcall( vm_, 1, LUA_MULTRET, 0 );
-
             return rc;
         }
 

@@ -50,7 +50,10 @@ end
 --a:call( t )
 
 
+print( global_table )
+
 function main( argv )
     print( argv )
+    return 1, 2, 3, {"hello!", [-34.90] = '¡!'}
 end
 
