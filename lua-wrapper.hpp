@@ -124,6 +124,12 @@ namespace lua {
             lua_pushlightuserdata( vm_, reinterpret_cast<void *>( value ) );
         }
 
+        template<typename T>
+        void push( T value )
+        {
+            lua_pushnumber( vm_, static_cast<T>( value ) );
+        }
+
         int get_type( int id = -1 )
         {
             return lua_type( vm_, id );
@@ -163,14 +169,13 @@ namespace lua {
         }
 
         template <typename T>
-        void set_in_table( const char *table_name,
-                           const char *key, T value,
-                           int id = LUA_GLOBALSINDEX )
+        void set_in_global( const char *table_name,
+                            const char *key, T value )
         {
             push( table_name );
             push( table_name );
 
-            lua_gettable( vm_, id );
+            lua_gettable( vm_, LUA_GLOBALSINDEX );
 
             // ==> table name | nil or table
             if ( !lua_istable( vm_, -1 ) ) {
@@ -186,62 +191,16 @@ namespace lua {
             push( key );             // ==> table name | table | item
             push( value );           // ==> table name | table | item | value
             lua_settable( vm_, -3 ); // ==> table name | table
-            lua_settable( vm_, id ); // ==>
-        }
-
-        template <typename T>
-        void set_in_table2( const char *table_name,
-                           const char *key, T value,
-                           int id = LUA_GLOBALSINDEX )
-        {
-            size_t len = 0;
-            const char * p = table_name;
-            while( (*p != '\0') && (*p != '.') ) {
-                ++len;
-                p++;
-            }
-
-            std::cout << "name: " << std::string( table_name, len ) << "\n";
-
-            push( table_name, len );
-            push( table_name, len );
-
-            lua_gettable( vm_, id == LUA_GLOBALSINDEX ? id : id - 2 );
-
-            std::cout << "type: " << get_type( -1 ) << "\n";
-
-            // ==> table name | nil or table
-            if ( !lua_istable( vm_, -1 ) ) {
-                if ( lua_isnoneornil( vm_, -1 ) ) {
-                    pop( 1 );
-                    lua_newtable( vm_ );
-                } else {
-                    lua_pop(vm_, 2);
-                    throw std::logic_error( "Not a table" );
-                }
-            }
-
-            if( !*p ) {
-                push( key );
-                push( value );
-                lua_settable( vm_, -3 );
-            } else {
-                lua_settable( vm_, id );
-                push( table_name, len );
-                lua_gettable( vm_, id == LUA_GLOBALSINDEX ? id : -2 );
-                set_in_table2( p + 1, key, value,
-                               id == LUA_GLOBALSINDEX ? -1 : id - 1 );
-            }
+            lua_settable( vm_, LUA_GLOBALSINDEX ); // ==>
         }
 
         template<typename T>
-        T get_from_global_table( const char* table_name,
-                                 const char* key,
-                                 int id = LUA_GLOBALSINDEX )
+        T get_from_global( const char* table_name,
+                           const char* key )
         {
             push( table_name );
 
-            lua_gettable( vm_, id ); // ==> nil or table
+            lua_gettable( vm_, LUA_GLOBALSINDEX ); // ==> nil or table
 
             if ( !lua_istable( vm_, -1 ) ) {
                 lua_pop( vm_, 1 );
@@ -254,8 +213,7 @@ namespace lua {
             T result;
             try {
                 result = get<T>( );
-            }
-            catch( ... ) {
+            } catch( ... ) {
                 lua_pop( vm_, 2 );
                 throw;
             }

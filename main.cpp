@@ -11,6 +11,7 @@
 #include "lua-wrapper.hpp"
 #include "lua-objects.hpp"
 
+
 namespace lo = lua::objects;
 
 lo::base_sptr g_table = NULL;
@@ -92,16 +93,91 @@ int l_print( lua_State *L )
     return 0;
 }
 
+void get_create_table( lua_State *vm_, int id )
+{
+
+}
+
+template <typename T>
+void set_in_table2( lua_State *vm_,
+                   const char *table_name,
+                   const char *key, T value )
+{
+    lua::state s( vm_ );
+
+    // ==> table name | table
+    size_t len = 0;
+    const char * p = table_name;
+    while( (*p != '\0') && (*p != '.') ) {
+        ++len;
+        p++;
+    }
+
+    std::string tn( table_name, len );
+
+    lua_getfield( vm_, -1, tn.c_str( ) );
+
+    if ( !lua_istable( vm_, -1 ) ) {
+        if ( lua_isnoneornil( vm_, -1 ) ) {
+            lua_pushstring( vm_, tn.c_str( ) );
+            lua_newtable( vm_ );
+        }
+    }
+
+    if( !*p ) {
+        lua_pushstring( vm_, key ); // ==> table name | table | item
+        s.push( value );            // ==> table name | table | item | value
+        lua_settable( vm_, -3 );    // ==> table name | table
+    } else {
+        set_in_table2( vm_, p + 1, key, value );
+    }
+}
+
+
+template <typename T>
+void set_in_table( lua_State *vm_,
+                   const char *table_name,
+                   const char *key, T value )
+{
+    lua::state s( vm_ );
+
+    size_t len = 0;
+    const char * p = table_name;
+    while( (*p != '\0') && (*p != '.') ) {
+        ++len;
+        p++;
+    }
+
+    std::string tn( table_name, len );
+    lua_getglobal( vm_, tn.c_str( ) );
+
+    // ==> table name | nil or table
+    if ( !lua_istable( vm_, -1 ) ) {
+        if ( lua_isnoneornil( vm_, -1 ) ) {
+            lua_newtable( vm_ );
+        }
+    }
+
+    // ==> table name | table
+    if( !*p ) {
+        lua_pushstring( vm_, key ); // ==> table name | table | item
+        s.push( value );            // ==> table name | table | item | value
+        lua_settable( vm_, -3 );    // ==> table name | table
+    } else {
+        set_in_table2( vm_, p + 1, key, value );
+    }
+    lua_setglobal( vm_, tn.c_str( ) );
+}
+
 int main( ) try
 {
     lua::state v;
     v.register_call( "print", l_print );
 
-//    lua_pushcfunction(v.state( ), l_sin, 1);
-//    lua_setglobal(v.state( ), "mysin");
+    set_in_table( v.get_state( ), "globt.r", "test", 123 );
 
-    v.set_in_table2( "globt.tress.tt", "counter", &v );
-    v.set_in_table2( "globt.tress.tt", "counter2", &v );
+    //    v.set_in_table2( "globt.tress", "counter", &v );
+//    v.set_in_table2( "globt.tress", "counter2", &v );
 
     v.check_call_error(luaL_loadfile(v.get_state( ), "test.lua"));
     v.check_call_error(lua_pcall(v.get_state( ), 0, LUA_MULTRET, 0));

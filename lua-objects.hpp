@@ -400,7 +400,7 @@ namespace lua { namespace objects {
             return list_.at(index).get( );
         }
 
-        void push_back( pair_sptr &val )
+        void push_back( const pair_sptr &val )
         {
             list_.push_back( val );
         }
