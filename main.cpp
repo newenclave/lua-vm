@@ -189,12 +189,6 @@ int main( ) try
     );
 
     v.set_object_in_global( "global_table", "registry", *t );
-
-//    set_in_table( v.get_state( ), "globt.r", "test", 123 );
-
-    //    v.set_in_table2( "globt.tress", "counter", &v );
-//    v.set_in_table2( "globt.tress", "counter2", &v );
-
     v.set_in_global( "global_table", "data", 100.0 );
     double d = v.get_from_global<double>( "global_table", "data");
 
