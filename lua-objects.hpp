@@ -526,6 +526,11 @@ namespace lua { namespace objects {
         return new function( func );
     }
 
+    inline light_userdata * new_light_userdata( void *data )
+    {
+        return new light_userdata( data );
+    }
+
 }}
 
 #ifdef LUA_WRAPPER_TOP_NAMESPACE

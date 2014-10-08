@@ -11,8 +11,8 @@ extern "C" {
 #include "lua.h"
 }
 
-#if (LUA_VERSION_NUM < 502)
-#error "Lua version is too old; Use 5.2"
+#if (LUA_VERSION_NUM < 501)
+#error "Lua version is too old; Use 5.1 or higher"
 #endif
 
 #include "lua-type-wrapper.hpp"

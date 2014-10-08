@@ -46,14 +46,12 @@ function test( )
     local c = create_table( 4 )
 end
 
-
 --a:call( t )
 
 
 print( global_table )
 
 function main( argv )
-    print( argv )
-    return 1, 2, 3, {"hello!", [-34.90] = '¡!'}
+    global_table.registry.add( global_table.registry.get( ) )
 end
 

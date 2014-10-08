@@ -7,6 +7,7 @@
 #include <stdlib.h>
 
 #include <memory>
+#include <map>
 
 #include "lua-wrapper.hpp"
 #include "lua-objects.hpp"
@@ -169,14 +170,39 @@ void set_in_table( lua_State *vm_,
     lua_setglobal( vm_, tn.c_str( ) );
 }
 
+typedef std::map<int, void *> map_type;
+
+int test_call( lua_State *L )
+{
+    lua::state v( L );
+    int data = v.get<int>( );
+
+    const void * mm = v.get_from_global<const void *>( "global_table", "map" );
+    if( mm ) {
+        map_type *m((map_type *)mm);
+        std::cout << "Parameters: " << (*m)[data] << "\n";
+    }
+
+    return 0;
+}
+
+int get( lua_State *L )
+{
+    lua::state v( L );
+    v.push( 2 );
+    return 1;
+}
 
 int main( ) try
 {
     lua::state v;
     v.register_call( "print", l_print );
 
+    map_type m;
+
     std::shared_ptr<lo::table> t( lo::new_table( ) );
-    t->add( lo::new_string( "test" ),
+    t->add(
+        lo::new_string( "test" ),
         lo::new_table(  )->add(
             lo::new_string( "internal" ),
             lo::new_string( "buff" )
@@ -185,10 +211,23 @@ int main( ) try
             lo::new_string( "2" )
         )->add(
             lo::new_string( "call" ),
-            lo::new_function( l_print )
+            lo::new_function( &l_print )
         )
+    )->add(
+        lo::new_string( "add" ),
+        lo::new_function( &test_call )
+    )->add(
+        lo::new_string( "get" ),
+        lo::new_function( &get )
     );
 
+    lo::base_uptr mmm( lo::new_light_userdata( &m ) );
+
+    m.insert( std::make_pair( 0, (void *)(0xFFFFFFF0) ) );
+    m.insert( std::make_pair( 1, (void *)(0xFFFFFFF1) ) );
+    m.insert( std::make_pair( 2, (void *)(0xFFFFFFF2) ) );
+
+    v.set_object_in_global( "global_table", "map", *mmm );
     v.set_object_in_global( "global_table", "registry", *t );
 
     v.set_in_global( "global_table", "data", 100.090 );

@@ -83,6 +83,23 @@ namespace lua { namespace types {
 
         static T get( lua_State *L, int idx )
         {
+            size_t length = 0;
+            const char *t = lua_tolstring( L, idx, length );
+            return t ? T( t, length ) : T( );
+        }
+    };
+
+    template <typename T>
+    struct id_string_ptr {
+
+        enum { type_index = LUA_TSTRING };
+        static bool check( lua_State * /*L*/, int /*idx*/ )
+        {
+            return true;
+        }
+
+        static T get( lua_State *L, int idx )
+        {
             const char *t = lua_tostring( L, idx );
             return T( t ? t : "<nil>" );
         }
@@ -131,7 +148,7 @@ namespace lua { namespace types {
 
     template <>
     struct id_traits<const char *> : public
-           id_string<const char *> { };
+           id_string_ptr<const char *> { };
 
     template <>
     struct id_traits<float> : public
