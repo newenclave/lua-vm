@@ -40,6 +40,12 @@ namespace lua { namespace objects {
             return TYPE_NONE;
         }
 
+        const bool none_or_nil( ) const
+        {
+            int ti = type_id( );
+            return ( ti == LUA_TNONE ) || ( ti == LUA_TNIL );
+        }
+
         virtual bool is_container( ) const
         {
             return false;
@@ -345,8 +351,12 @@ namespace lua { namespace objects {
 
         void push( lua_State *L ) const
         {
-            pair_.first->push( L );
-            pair_.second->push( L );
+            if( !pair_.first->none_or_nil( ) )  {
+                pair_.first->push( L );
+            }
+            if( !pair_.second->none_or_nil( ) ) {
+                pair_.second->push( L );
+            }
         }
 
         const base * at( size_t index ) const
@@ -355,6 +365,12 @@ namespace lua { namespace objects {
                 return index ? pair_.second.get( ) : pair_.first.get( );
             }
             throw std::out_of_range( "bad index" );
+        }
+
+        size_t nil_size( ) const
+        {
+            return  ( pair_.first->none_or_nil( )  ? 1 : 0 )
+                  + ( pair_.second->none_or_nil( ) ? 1 : 0 );
         }
 
         std::string str( ) const
@@ -427,8 +443,19 @@ namespace lua { namespace objects {
             typedef pair_vector::const_iterator citr;
             lua_newtable( L );
             for( citr b(list_.begin( )), e(list_.end( )); b!=e; ++b ) {
-                (*b)->push( L );
-                lua_settable(L, -3);
+                size_t n((*b)->nil_size( ));
+                switch (n) {
+                case 1:
+                    (*b)->push( L );
+                    lua_settable( L, -2 );
+                    break;
+                case 0:
+                    (*b)->push( L );
+                    lua_settable( L, -3 );
+                    break;
+                default: // nothing to do here
+                    break;
+                }
             }
         }
 
