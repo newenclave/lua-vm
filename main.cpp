@@ -127,53 +127,6 @@ static size_t path_root( const char *path )
     return res;
 }
 
-int get( lua_State *L, const char *path )
-{
-    int level = 1;
-    std::string r(path, path_root( path ));
-    const char *tail = path + r.size( );
-
-    lua_getglobal( L, r.c_str( ) );
-    while( 1 ) {
-        if( *tail ) {
-
-        } else {
-
-        }
-    }
-
-    lua_pop( L, level );
-
-}
-
-int get_table( lua_State *L, const char *path )
-{
-    int level = 1;
-    std::string r(path, path_root( path ));
-    const char *tail = path + r.size( );
-
-    lua_getglobal( L, r.c_str( ) );
-
-    while( 1 ) {
-        if( !lua_istable( L, -1 ) ) {
-            lua_pop( L, level );
-            level = 0;
-            break;
-        } else {
-            if( *tail ) {
-                tail++;
-                level++;
-                r.assign( tail, path_root( tail ) );
-                tail = tail + r.size( );
-                lua_getfield( L, -1, r.c_str( ) );
-            } else {
-                break;
-            }
-        }
-    }
-    return level;
-}
-
 int main( ) try
 {
     lua::state v;
@@ -184,16 +137,16 @@ int main( ) try
 
     lo::table *t(lo::new_table( ));
     t->add( lo::new_string( "1" ) )
-//     ->add( lo::new_string( "2" ) )
-//     ->add( lo::new_string( "3" ) )
-//     ->add( lo::new_string( "4" ) )
+     ->add( lo::new_string( "2" ) )
+     ->add( lo::new_string( "3" ) )
+     ->add( lo::new_string( "4" ) )
       ;
 
     v.set_object( "gtest.maxpart.y", *t );
 
     v.check_call_error(v.load_file( "test.lua" ));
 
-    int l = get_table( v.get_state( ), "t.backward" );
+    int l = v.get_table( "t.backward" );
 
     int i = 0;
 
