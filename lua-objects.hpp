@@ -354,7 +354,7 @@ namespace lua { namespace objects {
             if( !pair_.first->none_or_nil( ) )  {
                 pair_.first->push( L );
             }
-            if( !pair_.second->none_or_nil( ) ) {
+            if( !pair_.second->none_or_nil( ) )  {
                 pair_.second->push( L );
             }
         }
@@ -433,6 +433,13 @@ namespace lua { namespace objects {
             return this;
         }
 
+        table * add( base *v )
+        {
+            static std::shared_ptr<base> const_nil( new nil );
+            push_back( pair_sptr(new pair( const_nil, base_sptr(v) ) ) );
+            return this;
+        }
+
         virtual base *clone( ) const
         {
             return new table( *this );
@@ -442,12 +449,14 @@ namespace lua { namespace objects {
         {
             typedef pair_vector::const_iterator citr;
             lua_newtable( L );
-            for( citr b(list_.begin( )), e(list_.end( )); b!=e; ++b ) {
+            size_t len = 0;
+            for( citr b(list_.begin( )), e(list_.end( )); b!=e; ++b, ++len ) {
                 size_t n((*b)->nil_size( ));
                 switch (n) {
                 case 1:
+                    lua_pushinteger( L, len );
                     (*b)->push( L );
-                    lua_settable( L, -2 );
+                    lua_settable( L, -3 );
                     break;
                 case 0:
                     (*b)->push( L );

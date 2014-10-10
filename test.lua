@@ -7,7 +7,7 @@ function test( a )
     print(a, 'test!\n')
 end
 
-local t = {
+t = {
      name =  "$$$$$$$$"
     ,value = "1"
     ,forward = {
@@ -16,9 +16,12 @@ local t = {
         ,two  = 2
      }
     ,backward = {
-          [0] = 'zero'
-         ,[1] = 'one'
-         ,[2] = 'two'
+          'zero'
+         ,'one'
+         ,'two'
+         ,'three'
+         ,'four'
+         ,'five'
     }
     ,tg = globt
 }
@@ -50,7 +53,7 @@ end
 
 m = { ['t.tt'] = { i={ } } }
 
-print( m )
+print( t.backward )
 print( gtest )
 
 

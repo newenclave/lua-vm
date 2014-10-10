@@ -54,6 +54,13 @@ namespace lua {
             return tmp;
         }
 
+        struct object_wrapper {
+            const objects::base *obj_;
+            object_wrapper( const objects::base *o )
+                :obj_(o)
+            { }
+        };
+
     public:
 
         enum state_owning {
@@ -126,9 +133,19 @@ namespace lua {
             }
         }
 
+        void push_value( int id = -1 )
+        {
+            lua_pushvalue( vm_, id );
+        }
+
         void push( bool value )
         {
             lua_pushboolean( vm_, value ? 1 : 0 );
+        }
+
+        void push( )
+        {
+            lua_pushnil( vm_ );
         }
 
         void push( const char* value )
@@ -149,6 +166,11 @@ namespace lua {
         void push( lua_CFunction value )
         {
             lua_pushcfunction( vm_, value );
+        }
+
+        void push( object_wrapper value )
+        {
+            value.obj_->push( vm_ );
         }
 
         template<typename T>
@@ -312,6 +334,11 @@ namespace lua {
                 }
             }
             set_global( p.c_str( ) );
+        }
+
+        void set_object( const char *path, const objects::base &obj )
+        {
+            set<object_wrapper>( path, object_wrapper( &obj ) );
         }
 
         template<typename T>

@@ -146,6 +146,34 @@ int get( lua_State *L, const char *path )
 
 }
 
+int get_table( lua_State *L, const char *path )
+{
+    int level = 1;
+    std::string r(path, path_root( path ));
+    const char *tail = path + r.size( );
+
+    lua_getglobal( L, r.c_str( ) );
+
+    while( 1 ) {
+        if( !lua_istable( L, -1 ) ) {
+            lua_pop( L, level );
+            level = 0;
+            break;
+        } else {
+            if( *tail ) {
+                tail++;
+                level++;
+                r.assign( tail, path_root( tail ) );
+                tail = tail + r.size( );
+                lua_getfield( L, -1, r.c_str( ) );
+            } else {
+                break;
+            }
+        }
+    }
+    return level;
+}
+
 int main( ) try
 {
     lua::state v;
@@ -153,18 +181,35 @@ int main( ) try
 
 
     v.set( "gtest.maxpart.x", 1 );
-    v.set( "gtest.maxpart.x.xx", 800 );
-    v.set( "gtest.maxpart.x.xx.q.x", 800 );
 
-    v.set( "gtest.minpart.y", 0 );
-    v.set( "gtest.midpart.z.r", 5 );
-    v.set( "gtest.maxpart.x.xx.i", -222 );
-    v.set( "gtest.midpart.z.78", -888 );
-    //v.set( "gtest..", -888 );
+    lo::table *t(lo::new_table( ));
+    t->add( lo::new_string( "1" ) )
+     ->add( lo::new_string( "2" ) )
+     ->add( lo::new_string( "3" ) )
+     ->add( lo::new_string( "4" ) )
+      ;
 
-
+    v.set_object( "gtest.maxpart.y", *t );
 
     v.check_call_error(v.load_file( "test.lua" ));
+
+    int l = get_table( v.get_state( ), "t.backward" );
+
+    int i = 0;
+
+    std::cout << lua_objlen( v.get_state( ), -1 ) << "!\n";
+
+    v.push( );
+    while( lua_next( v.get_state( ), -2 ) ) {
+
+        v.push_value( -2 );
+
+        std::cout << v.get<std::string>( -1 ) << "\n";
+        std::cout << v.get<std::string>( -2 ) << "\n";
+        v.pop( 2 );
+    }
+
+    v.pop( l );
 
     l_print( v.get_state( ) );
 
