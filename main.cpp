@@ -202,11 +202,15 @@ int main( ) try
     lua::state v;
     v.register_call( "print", l_print );
 
-    set_in_global( v.get_state( ), "gtest.maxpart.x", 1 );
-    set_in_global( v.get_state( ), "gtest.maxpart.x.xx", 800 );
-    set_in_global( v.get_state( ), "gtest.minpart.y", 0 );
-    set_in_global( v.get_state( ), "gtest.midpart.z.r", 5 );
-    set_in_global( v.get_state( ), "gtest.maxpart.x.xx.i", -222 );
+
+    v.set( "gtest.maxpart.x", 1 );
+    v.set( "gtest.maxpart.x.xx", 800 );
+    v.set( "gtest.maxpart.x.xx.q.x", 800 );
+
+    v.set( "gtest.minpart.y", 0 );
+    v.set( "gtest.midpart.z.r", 5 );
+    v.set( "gtest.maxpart.x.xx.i", -222 );
+    v.set( "gtest.midpart.z.78", -888 );
 
     v.check_call_error(v.load_file( "test.lua" ));
 

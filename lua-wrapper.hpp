@@ -37,16 +37,20 @@ namespace lua {
 
             if ( osize && nsize && ptr ) {
                 if ( osize < nsize ) {
-                    tmp = realloc (ptr, nsize);
+                    tmp = realloc ( ptr, nsize + 1 );
                 } else {
                     tmp = ptr;
                 }
             } else if( nsize ) {
-                tmp = malloc( nsize );
+
+                tmp = malloc( nsize + 1 );
+
             } else if( nsize == 0 ) {
+
                 free( ptr );
                 tmp = NULL;
             }
+
             return tmp;
         }
 
@@ -233,6 +237,86 @@ namespace lua {
             lua_setglobal( vm_, table_name );
         }
 
+    private:
+
+        static size_t root_path( const char *path )
+        {
+            size_t res = 0;
+            while( (*path != '.') && (*path != '\0') ) {
+                ++path;
+                ++res;
+            }
+            return res;
+        }
+
+        template <typename T>
+        void create_or_push( const char *path, T value )
+        {
+            if( !*path ) {
+                push( value );
+            } else {
+
+                std::string p( path, root_path( path ) );
+                const char *tail = path + p.size( );
+
+                lua_newtable( vm_ );
+                push( p.c_str( ) );
+                create_or_push( !*tail ? "" : tail + 1, value );
+                lua_settable( vm_, -3 );
+            }
+        }
+
+        template <typename T>
+        void set_found( const char *path, T value )
+        {
+            std::string p( path, root_path( path ) );
+            const char *tail = path + p.size( );
+
+            if( !*tail ) {
+                push( p.c_str( ) );
+                push( value );
+                lua_settable( vm_, -3 );
+            } else {
+                lua_getfield( vm_, -1, p.c_str( ) );
+                if( !lua_istable( vm_, -1 ) ) {
+                    pop( 1 );
+                    push( p.c_str( ) );
+                    create_or_push( tail + 1, value );
+                    lua_settable( vm_, -3 );
+                } else {
+                    set_found( tail + 1, value );
+                    pop( 1 );
+                }
+            }
+        }
+
+    public:
+
+        template <typename T>
+        void set( const char *path, T value )
+        {
+            std::string p( path, root_path( path ) );
+            const char *tail = path + p.size( );
+
+            lua_getglobal( vm_, p.c_str( ) );
+
+            if( !lua_istable( vm_, -1 ) ) {
+                pop( 1 );
+                if( !*tail ) {
+                    push( value );
+                } else {
+                    create_or_push( tail + 1, value );
+                }
+            } else {
+                if( !*tail ) {
+                    pop( 1 );
+                    push( value );
+                } else {
+                    set_found( tail + 1, value );
+                }
+            }
+            lua_setglobal( vm_, p.c_str( ) );
+        }
 
         template<typename T>
         T get_from_global( const char* table_name,

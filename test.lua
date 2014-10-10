@@ -48,6 +48,9 @@ end
 
 --a:call( t )
 
+m = { ['t.tt'] = { i={ } } }
+
+print( m )
 print( gtest )
 
 
