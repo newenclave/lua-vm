@@ -192,31 +192,8 @@ namespace lua {
             return traits::get( vm_, id );
         }
 
-        template <typename T>
-        void set_in_global( const char *table_name,
-                            const char *key, T value )
-        {
-            lua_getglobal( vm_, table_name );
-
-            if ( !lua_istable( vm_, -1 ) ) {
-                if ( lua_isnoneornil( vm_, -1 ) ) {
-                    pop( 1 );
-                    lua_newtable( vm_ );
-                } else {
-                    lua_pop(vm_, 2);
-                    throw std::logic_error( "Not a table" );
-                }
-            }
-
-            push( key );
-            push( value );
-            lua_settable( vm_, -3 );
-
-            lua_setglobal( vm_, table_name );
-        }
-
-        void set_object_in_global( const char *table_name,
-                                   const char *key, const objects::base &bo )
+        void set_object( const char *table_name,
+                         const char *key, const objects::base &bo )
         {
             lua_getglobal( vm_, table_name );
 
@@ -239,10 +216,25 @@ namespace lua {
 
     private:
 
-        static size_t root_path( const char *path )
+        void get_global( const char *val )
+        {
+            lua_getglobal( vm_, val );
+        }
+
+        void set_global( const char *val )
+        {
+            lua_setglobal( vm_, val );
+        }
+
+        void set_table( int id = -3 )
+        {
+            lua_settable( vm_, id );
+        }
+
+        static size_t path_root( const char *path )
         {
             size_t res = 0;
-            while( (*path != '.') && (*path != '\0') ) {
+            while( ( *path != '.' ) && ( *path != '\0' ) ) {
                 ++path;
                 ++res;
             }
@@ -256,35 +248,39 @@ namespace lua {
                 push( value );
             } else {
 
-                std::string p( path, root_path( path ) );
+                std::string p( path, path_root( path ) );
                 const char *tail = path + p.size( );
 
                 lua_newtable( vm_ );
                 push( p.c_str( ) );
                 create_or_push( !*tail ? "" : tail + 1, value );
-                lua_settable( vm_, -3 );
+                set_table( );
             }
         }
 
         template <typename T>
-        void set_found( const char *path, T value )
+        void set_to_stack( const char *path, T value )
         {
-            std::string p( path, root_path( path ) );
+            std::string p( path, path_root( path ) );
             const char *tail = path + p.size( );
 
             if( !*tail ) {
+
                 push( p.c_str( ) );
                 push( value );
-                lua_settable( vm_, -3 );
+                set_table( );
+
             } else {
+
                 lua_getfield( vm_, -1, p.c_str( ) );
+
                 if( !lua_istable( vm_, -1 ) ) {
                     pop( 1 );
                     push( p.c_str( ) );
                     create_or_push( tail + 1, value );
-                    lua_settable( vm_, -3 );
+                    set_table( );
                 } else {
-                    set_found( tail + 1, value );
+                    set_to_stack( tail + 1, value );
                     pop( 1 );
                 }
             }
@@ -295,10 +291,10 @@ namespace lua {
         template <typename T>
         void set( const char *path, T value )
         {
-            std::string p( path, root_path( path ) );
+            std::string p( path, path_root( path ) );
             const char *tail = path + p.size( );
 
-            lua_getglobal( vm_, p.c_str( ) );
+            get_global( p.c_str( ) );
 
             if( !lua_istable( vm_, -1 ) ) {
                 pop( 1 );
@@ -312,10 +308,10 @@ namespace lua {
                     pop( 1 );
                     push( value );
                 } else {
-                    set_found( tail + 1, value );
+                    set_to_stack( tail + 1, value );
                 }
             }
-            lua_setglobal( vm_, p.c_str( ) );
+            set_global( p.c_str( ) );
         }
 
         template<typename T>
