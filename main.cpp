@@ -9,8 +9,8 @@
 #include <memory>
 #include <map>
 
-#include "lua-wrapper.hpp"
-#include "lua-objects.hpp"
+#include "../ferro-remote/include/fr-lua/lua-wrapper.hpp"
+#include "../ferro-remote/include/fr-lua/lua-objects.hpp"
 
 
 namespace lo = lua::objects;
