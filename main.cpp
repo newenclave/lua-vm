@@ -129,10 +129,10 @@ size_t get_top_path( const char *path )
 
 void create_set( lua_State *L, const char *rest, int value )
 {
-
     if( !*rest ) {
         lua_pushinteger( L, value );
     } else {
+
         size_t path_len = get_top_path( rest );
         std::string p( rest, path_len );
         const char *nr = rest + path_len;
@@ -142,9 +142,7 @@ void create_set( lua_State *L, const char *rest, int value )
         create_set( L, !*nr ? "" : nr + 1, value );
         lua_settable( L, -3 );
     }
-
 }
-
 
 /// table found
 void set_if_found( lua_State *L, const char *rest, int value )
@@ -159,10 +157,11 @@ void set_if_found( lua_State *L, const char *rest, int value )
         lua_settable( L, -3 );
     } else {
         lua_getfield( L, -1, p.c_str( ) );
-        if( lua_isnil( L, -1 ) ) {
+        if( !lua_istable( L, -1 ) ) {
             lua_pop( L, 1 );
-            p += nr;
-            create_set( L, p.c_str( ), value );
+            lua_pushstring( L, p.c_str( ) );
+            create_set( L, nr + 1, value );
+            lua_settable( L, -3 );
         } else {
             set_if_found( L, nr + 1, value );
             lua_pop( L, 1 );
@@ -203,9 +202,11 @@ int main( ) try
     lua::state v;
     v.register_call( "print", l_print );
 
-    set_in_global( v.get_state( ), "gtest.maxpart.x", 100 );
+    set_in_global( v.get_state( ), "gtest.maxpart.x", 1 );
+    set_in_global( v.get_state( ), "gtest.maxpart.x.xx", 800 );
     set_in_global( v.get_state( ), "gtest.minpart.y", 0 );
-    //set_in_global( v.get_state( ), "gtest.midpart.z", 50 );
+    set_in_global( v.get_state( ), "gtest.midpart.z.r", 5 );
+    set_in_global( v.get_state( ), "gtest.maxpart.x.xx.i", -222 );
 
     v.check_call_error(v.load_file( "test.lua" ));
 
