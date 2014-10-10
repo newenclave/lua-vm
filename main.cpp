@@ -117,6 +117,35 @@ int get( lua_State *L )
     return 1;
 }
 
+static size_t path_root( const char *path )
+{
+    size_t res = 0;
+    while( ( *path != '.' ) && ( *path != '\0' ) ) {
+        ++path;
+        ++res;
+    }
+    return res;
+}
+
+int get( lua_State *L, const char *path )
+{
+    int level = 1;
+    std::string r(path, path_root( path ));
+    const char *tail = path + r.size( );
+
+    lua_getglobal( L, r.c_str( ) );
+    while( 1 ) {
+        if( *tail ) {
+
+        } else {
+
+        }
+    }
+
+    lua_pop( L, level );
+
+}
+
 int main( ) try
 {
     lua::state v;
@@ -131,6 +160,9 @@ int main( ) try
     v.set( "gtest.midpart.z.r", 5 );
     v.set( "gtest.maxpart.x.xx.i", -222 );
     v.set( "gtest.midpart.z.78", -888 );
+    //v.set( "gtest..", -888 );
+
+
 
     v.check_call_error(v.load_file( "test.lua" ));
 
