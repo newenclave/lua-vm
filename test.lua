@@ -48,10 +48,6 @@ end
 
 --a:call( t )
 
+print( gtest )
 
-print( global_table )
-
-function main( argv )
-    global_table.registry.add( global_table.registry.get( ) )
-end
 

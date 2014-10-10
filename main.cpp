@@ -117,50 +117,97 @@ int get( lua_State *L )
     return 1;
 }
 
+size_t get_top_path( const char *path )
+{
+    size_t res = 0;
+    while( (*path != '.') && (*path != '\0') ) {
+        ++path;
+        ++res;
+    }
+    return res;
+}
+
+void create_set( lua_State *L, const char *rest, int value )
+{
+
+    if( !*rest ) {
+        lua_pushinteger( L, value );
+    } else {
+        size_t path_len = get_top_path( rest );
+        std::string p( rest, path_len );
+        const char *nr = rest + path_len;
+
+        lua_newtable( L );
+        lua_pushstring( L, p.c_str( ) );
+        create_set( L, !*nr ? "" : nr + 1, value );
+        lua_settable( L, -3 );
+    }
+
+}
+
+
+/// table found
+void set_if_found( lua_State *L, const char *rest, int value )
+{
+    size_t path_len = get_top_path( rest );
+    std::string p( rest, path_len );
+    const char *nr = rest + path_len;
+
+    if( !*nr ) {
+        lua_pushstring( L, p.c_str( ) );
+        lua_pushinteger( L, value );
+        lua_settable( L, -3 );
+    } else {
+        lua_getfield( L, -1, p.c_str( ) );
+        if( lua_isnil( L, -1 ) ) {
+            lua_pop( L, 1 );
+            p += nr;
+            create_set( L, p.c_str( ), value );
+        } else {
+            set_if_found( L, nr + 1, value );
+            lua_pop( L, 1 );
+        }
+    }
+}
+
+void set_in_global( lua_State *L, const char *path, int value )
+{
+    size_t path_len = get_top_path( path );
+    std::string p( path, path_len );
+
+    lua_getglobal( L, p.c_str( ) ); // stack ->> table || nil
+
+    const char *rest = path + path_len;
+
+    if( !lua_istable( L, -1 ) ) {
+        lua_pop( L, 1 );
+        if( !*rest ) {
+            lua_pushinteger( L, value );
+        } else {
+            create_set( L, rest + 1, value );
+        }
+    } else {
+        if( !*rest ) {
+            lua_pop( L, 1 );
+            lua_pushinteger( L, value );
+        } else {
+            set_if_found( L, rest + 1, value );
+        }
+    }
+
+    lua_setglobal( L, p.c_str( ) );
+}
+
 int main( ) try
 {
     lua::state v;
     v.register_call( "print", l_print );
 
-    map_type m;
-
-    std::shared_ptr<lo::table> t( lo::new_table( ) );
-    t->add(
-        lo::new_string( "test" ),
-        lo::new_table(  )->add(
-            lo::new_string( "internal" ),
-            lo::new_string( "buff" )
-        )->add(
-            lo::new_string( "second" ),
-            lo::new_string( "2" )
-        )->add(
-            lo::new_nil( ),
-            lo::new_function( &l_print )
-        )
-    )->add(
-        lo::new_string( "add" ),
-        lo::new_function( &test_call )
-    )->add(
-        lo::new_string( "get" ),
-        lo::new_function( &get )
-    );
-
-    lo::base_uptr mmm( lo::new_light_userdata( &m ) );
-
-    m.insert( std::make_pair( 0, (void *)(0xFFFFFFF0) ) );
-    m.insert( std::make_pair( 1, (void *)(0xFFFFFFF1) ) );
-    m.insert( std::make_pair( 2, (void *)(0xFFFFFFF2) ) );
-
-    v.set_object_in_global( "global_table", "map", *mmm );
-    v.set_object_in_global( "global_table", "registry", *t );
-
-    v.set_in_global( "global_table", "data", 100.090 );
-    double d = v.get_from_global<double>( "global_table", "data");
-
-    std::cout << "double " << d << "\n";
+    set_in_global( v.get_state( ), "gtest.maxpart.x", 100 );
+    set_in_global( v.get_state( ), "gtest.minpart.y", 0 );
+    //set_in_global( v.get_state( ), "gtest.midpart.z", 50 );
 
     v.check_call_error(v.load_file( "test.lua" ));
-    v.check_call_error(v.exec_function( "main", *t ));
 
     l_print( v.get_state( ) );
 

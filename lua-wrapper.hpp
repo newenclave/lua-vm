@@ -233,6 +233,7 @@ namespace lua {
             lua_setglobal( vm_, table_name );
         }
 
+
         template<typename T>
         T get_from_global( const char* table_name,
                            const char* key )
@@ -243,9 +244,6 @@ namespace lua {
                 lua_pop( vm_, 1 );
                 throw std::logic_error( "Not a table" );
             }
-
-            //push( key );
-            //lua_gettable( vm_, -2 );
 
             lua_getfield( vm_, -1, key );
 
