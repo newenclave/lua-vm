@@ -184,9 +184,9 @@ int main( ) try
 
     lo::table *t(lo::new_table( ));
     t->add( lo::new_string( "1" ) )
-     ->add( lo::new_string( "2" ) )
-     ->add( lo::new_string( "3" ) )
-     ->add( lo::new_string( "4" ) )
+//     ->add( lo::new_string( "2" ) )
+//     ->add( lo::new_string( "3" ) )
+//     ->add( lo::new_string( "4" ) )
       ;
 
     v.set_object( "gtest.maxpart.y", *t );
