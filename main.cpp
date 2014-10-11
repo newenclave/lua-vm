@@ -96,19 +96,19 @@ int l_print( lua_State *L )
 
 typedef std::map<int, void *> map_type;
 
-int test_call( lua_State *L )
-{
-    lua::state v( L );
-    int data = v.get<int>( );
+//int test_call( lua_State *L )
+//{
+//    lua::state v( L );
+//    int data = v.get<int>( );
 
-    unsigned long mm = v.get_from_global<unsigned long>( "global_table", "map" );
-    if( mm ) {
-        map_type *m((map_type *)mm);
-        std::cout << "Parameters: " << (*m)[data] << "\n";
-    }
+//    unsigned long mm = v.get_from_global<unsigned long>( "global_table", "map" );
+//    if( mm ) {
+//        map_type *m((map_type *)mm);
+//        std::cout << "Parameters: " << (*m)[data] << "\n";
+//    }
 
-    return 0;
-}
+//    return 0;
+//}
 
 int get( lua_State *L )
 {
@@ -138,6 +138,7 @@ int main( ) try
     v.openlib( "os" );
 
     v.set( "gtest.maxpart.x", 1 );
+    v.set( "gtest.maxpart.n.z.open", "100!0" );
 
     lo::table *t(lo::new_table( ));
     t->add( lo::new_string( "1" ) )
@@ -150,30 +151,11 @@ int main( ) try
             ->add( lo::new_string( "|" ) )
             )
       ;
-
     v.set_object( "gtest.maxpart.y", t );
 
     v.check_call_error(v.load_file( "test.lua" ));
 
-    int l = v.get_table( "t.backward" );
-
-    int i = 0;
-
-    std::cout << lua_rawlen( v.get_state( ), -1 ) << "!\n";
-
-    v.push( );
-    while( lua_next( v.get_state( ), -2 ) ) {
-
-        v.push_value( -2 );
-
-        std::cout << v.get<std::string>( -1 ) << "\n";
-        std::cout << v.get<std::string>( -2 ) << "\n";
-        v.pop( 2 );
-    }
-
-    v.pop( l );
-
-    l_print( v.get_state( ) );
+    std::cout << "fld: " << v.get<std::string>("gtest.maxpart.n.z.open") << "\n";
 
     return 0;
 
