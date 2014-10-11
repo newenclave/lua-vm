@@ -55,6 +55,6 @@ m = { ['t.tt'] = { i={ } } }
 
 print( math )
 print( string )
-print( gtest )
+print( gtest.maxpart.y )
 
 

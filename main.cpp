@@ -137,7 +137,7 @@ int main( ) try
     v.openlib( "math" );
     v.openlib( "os" );
 
-    v.set( "gtest.maxpart.x", 1 );
+    v.set_object( "gtest.maxpart.x", 1 );
 
     lo::table *t(lo::new_table( ));
     t->add( lo::new_string( "1" ) )
@@ -146,7 +146,7 @@ int main( ) try
      ->add( lo::new_string( "4" ) )
       ;
 
-    v.set_object( "gtest.maxpart.y", *t );
+    v.set<const lo::base *>( "gtest.maxpart.y", t );
 
     v.check_call_error(v.load_file( "test.lua" ));
 
@@ -154,7 +154,7 @@ int main( ) try
 
     int i = 0;
 
-    std::cout << lua_objlen( v.get_state( ), -1 ) << "!\n";
+    std::cout << lua_rawlen( v.get_state( ), -1 ) << "!\n";
 
     v.push( );
     while( lua_next( v.get_state( ), -2 ) ) {
