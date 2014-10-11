@@ -53,7 +53,8 @@ end
 
 m = { ['t.tt'] = { i={ } } }
 
-print( t.backward )
+print( math )
+print( string )
 print( gtest )
 
 

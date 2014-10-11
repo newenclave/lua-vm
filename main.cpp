@@ -132,6 +132,10 @@ int main( ) try
     lua::state v;
     v.register_call( "print", l_print );
 
+    v.openlib( "string" );
+    v.openlib( "table" );
+    v.openlib( "math" );
+    v.openlib( "os" );
 
     v.set( "gtest.maxpart.x", 1 );
 
