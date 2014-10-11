@@ -137,16 +137,21 @@ int main( ) try
     v.openlib( "math" );
     v.openlib( "os" );
 
-    v.set_object( "gtest.maxpart.x", 1 );
+    v.set( "gtest.maxpart.x", 1 );
 
     lo::table *t(lo::new_table( ));
     t->add( lo::new_string( "1" ) )
-     ->add( lo::new_string( "2" ) )
-     ->add( lo::new_string( "3" ) )
-     ->add( lo::new_string( "4" ) )
+        ->add( lo::new_string( "2" ) )
+        ->add( lo::new_string( "3" ) )
+        ->add( lo::new_string( "neljä" ), lo::new_table( )
+            ->add( lo::new_string( "|" ) )
+            ->add( lo::new_string( "|" ) )
+            ->add( lo::new_string( "|" ) )
+            ->add( lo::new_string( "|" ) )
+            )
       ;
 
-    v.set<const lo::base *>( "gtest.maxpart.y", t );
+    v.set_object( "gtest.maxpart.y", t );
 
     v.check_call_error(v.load_file( "test.lua" ));
 
