@@ -45,7 +45,7 @@ int set_callback( lua_State *L )
 }
 
 int main( int argc, const char **argv )
-{  try {
+{ try {
 
     const char * path = argc > 1 ? argv[1] : "test.lua";
 
