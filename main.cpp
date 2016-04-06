@@ -15,6 +15,28 @@
 
 namespace lo = lua::objects;
 
+void print_sptr( lua_State *L, const lo::base *o_, int iii )
+{
+    if( iii == 2 ) return;
+    const lo::base *o = o_;
+    lo::base_sptr sptr;
+    lua::state ls(L);
+
+    if( o->count( ) == 0 ) {
+        o->push( L );
+        sptr = ls.get_object(  );
+        o = sptr.get( );
+        ls.pop( );
+    }
+
+    //std::cout << "G " << o->count( ) << "\n";
+
+    for( size_t i=0; i<o->count( ); ++i ) {
+        auto f = o->at( i );
+        std::cout << f->at(0)->str( ) << "\n";
+        print_sptr( L, f->at(1), iii + 1 );
+    }
+}
 
 int lcall_print( lua_State *L )
 {
@@ -22,7 +44,12 @@ int lcall_print( lua_State *L )
     int n = ls.get_top( );
     for( int i=1; i<=n; ++i ) {
         lo::base_sptr bp( ls.get_object( i, 1 ) );
-        std::cout << bp->str( );
+
+//        for( size_t i=0; i<bp->count( ); ++i ) {
+            print_sptr( L, bp.get( ), 0 );
+//        }
+
+//        std::cout << bp->str( );
     }
     ls.clean_stack( );
     return 0;
