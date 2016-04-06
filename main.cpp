@@ -17,16 +17,14 @@ namespace lo = lua::objects;
 
 void print_sptr( lua_State *L, const lo::base *o_, int iii )
 {
-    if( iii == 2 ) return;
+    if( iii == 3 ) return;
     const lo::base *o = o_;
     lo::base_sptr sptr;
     lua::state ls(L);
 
     if( o->count( ) == 0 ) {
-        o->push( L );
-        sptr = ls.get_object(  );
+        sptr = ls.ref_to_object( o );
         o = sptr.get( );
-        ls.pop( );
     }
 
     //std::cout << "G " << o->count( ) << "\n";
