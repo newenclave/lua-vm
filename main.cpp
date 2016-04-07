@@ -9,15 +9,14 @@
 #include <memory>
 #include <map>
 
-#include "../ferro-remote/include/fr-lua/lua-wrapper.hpp"
-#include "../ferro-remote/include/fr-lua/lua-objects.hpp"
-
+#include "lua-wrapper/lua-wrapper.hpp"
+#include "lua-wrapper/lua-objects.hpp"
 
 namespace lo = lua::objects;
 
 void print_sptr( lua_State *L, const lo::base *o_, int iii )
 {
-    if( iii == 3 ) return;
+    if( iii == 5 ) return;
     const lo::base *o = o_;
     lo::base_sptr sptr;
     lua::state ls(L);

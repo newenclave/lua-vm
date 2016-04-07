@@ -15,6 +15,7 @@ foreach( src_dir ${lib_dirs} )
     list(APPEND lib_src     ${headers})
 endforeach( )
 
+
 add_library( ${lib_name} STATIC ${lib_src} )
 
 set( LUA_INCLUDE_DIR
