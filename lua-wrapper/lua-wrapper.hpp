@@ -310,7 +310,7 @@ namespace lua {
 
                 objects::base_sptr second = get_type( -2 ) == LUA_TTABLE
                         ? objects::base_sptr(new objects::reference( vm_, -2 ))
-                        : get_object( -1, flags );
+                        : get_object( -2, flags );
 
                 objects::pair_sptr next_pair
                         ( objects::new_pair( first, second ) );
