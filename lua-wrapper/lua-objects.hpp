@@ -807,15 +807,20 @@ namespace lua { namespace objects {
             :state_(state)
             ,ref_(create_ref( state, index ))
             ,type_(lua_type( state, index ) | base::TYPE_REFERENCE)
-        { }
+        {
+            //std::cout << "reference( )" << "\n";
+        }
 
         reference( lua_State *state, int /*index*/, int ref )
             :state_(state)
             ,ref_(ref)
-        { }
+        {
+            //std::cout << "reference( )" << "\n";
+        }
 
         ~reference( )
         {
+            //std::cout << "~reference( )" << "\n";
             luaL_unref( state_, LUA_REGISTRYINDEX, ref_ );
         }
 

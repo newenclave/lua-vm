@@ -18,7 +18,7 @@ void print_sptr( lua_State *L, const lo::base *o_, int iii )
 {
     const std::string space( iii * 2, ' ' );
     if( iii == 3 ) {
-        std::cout << space << o_->str( ) << "\n";
+        std::cout <<  space << o_->str( ) << "\n";
         return;
     }
     const lo::base *o = o_;
@@ -35,9 +35,9 @@ void print_sptr( lua_State *L, const lo::base *o_, int iii )
     if(o->count( )) {
         for( size_t i=0; i<o->count( ); ++i ) {
             auto f = o->at( i );
-            std::cout << space << f->at(0)->str( ) << "\n";
+            std::cout << space << f->at(0)->str( ) << " -> \n";
             auto t = f->at(1)->type_id( );
-            if( t == LUA_TTABLE ) {
+            if( ( t & LUA_TTABLE ) == LUA_TTABLE ) {
                 print_sptr( L, f->at(1), iii + 1 );
             } else {
                 std::cout << space << f->at(1)->str( ) << "\n";
@@ -64,6 +64,24 @@ int lcall_print( lua_State *L )
     ls.clean_stack( );
     return 0;
 }
+
+int lcall_new( lua_State *L )
+{
+    lua::state ls(L);
+    int n = ls.get_top( );
+    for( int i=1; i<=n; ++i ) {
+        lo::base_sptr bp( ls.get_object( i, 1 ) );
+
+//        for( size_t i=0; i<bp->count( ); ++i ) {
+            print_sptr( L, bp.get( ), 0 );
+//        }
+
+        //std::cout << bp->str( );
+    }
+    ls.clean_stack( );
+    return 0;
+}
+
 
 int set_callback( lua_State *L )
 {
