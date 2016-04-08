@@ -17,7 +17,7 @@ namespace lo = lua::objects;
 void print_sptr( lua_State *L, const lo::base *o_, int iii )
 {
     const std::string space( iii * 2, ' ' );
-    if( iii == 3 ) {
+    if( iii == 10 ) {
         std::cout <<  space << o_->str( ) << "\n";
         return;
     }
@@ -99,6 +99,69 @@ int set_callback( lua_State *L )
     return 0;
 }
 
+class lua_meta_sample {
+
+    typedef lua_meta_sample this_type;
+
+    static int lcall_gc( lua_State *L )
+    {
+        void *ud = luaL_testudata( L, 1, meta_name( ) );
+        if( ud ) {
+            lua_meta_sample *inst = static_cast<lua_meta_sample *>(ud);
+            inst->~lua_meta_sample( );
+        }
+        return 0;
+    }
+
+    static lua_meta_sample *get_inst( lua_State *L )
+    {
+        void *ud = luaL_checkudata( L, 1, meta_name( ) );
+        return static_cast<lua_meta_sample *>(ud);
+    }
+
+    static int lcall_tostring( lua_State *L )
+    {
+        lua_meta_sample *inst = get_inst( L );
+        lua::state ls(L);
+        if( inst ) {
+            ls.push( "test_tableinst" );
+            return 1;
+        }
+        return 0;
+    }
+
+public:
+
+    static int lcall_create( lua_State *L )
+    {
+        void *ud = lua_newuserdata( L, sizeof(this_type));
+        if( ud ) {
+            new (ud) lua_meta_sample;
+            luaL_getmetatable( L, meta_name( ) );
+            lua_setmetatable(L, -2);
+            return 1;
+        }
+        return 0;
+    }
+
+    static const char *meta_name( )
+    {
+        return "metaname_test";
+    }
+
+    static void register_table( lua_State *L )
+    {
+        const struct luaL_Reg lib[ ] = {
+             { "new",        &this_type::lcall_create  }
+            ,{ "__gc",       &this_type::lcall_gc  }
+            ,{ "__tostring", &this_type::lcall_tostring  }
+        };
+        lua::state ls(L);
+        lo::metatable mt( meta_name( ), lib );
+        mt.push( L );
+    }
+};
+
 int main( int argc, const char **argv )
 { try {
 
@@ -106,8 +169,13 @@ int main( int argc, const char **argv )
 
     lua::state ls;
 
-    ls.register_call( "print", &lcall_print );
+    ls.openlibs( );
+
+    //ls.register_call( "print", &lcall_print );
     ls.register_call( "set_callback", &set_callback );
+
+    lua_meta_sample::register_table( ls.get_state( ) );
+    ls.register_call( "new_table", &lua_meta_sample::lcall_create );
 
     ls.check_call_error(ls.load_file( path ));
 
