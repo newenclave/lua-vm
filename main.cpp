@@ -162,6 +162,7 @@ public:
     }
 };
 
+
 int main( int argc, const char **argv )
 { try {
 
@@ -186,3 +187,55 @@ int main( int argc, const char **argv )
     return 1;
 }}
 
+
+
+//#include <iostream>
+
+//struct Hello
+//{
+//    static int helloworld( int ) { return 0; }
+//};
+
+//struct Hello2
+//{
+//    //void helloworld( int ) {  }
+//    static float helloworld( ) { return 0.1; }
+//};
+
+//struct Generic {};
+
+//typedef int (*test)( int );
+
+//struct fun_trait {
+//    template <typename T, typename Q>
+//    static char test( T(*)( Q ) ) { return '1'; }
+
+//    template <typename T>
+//    static short test( T t ) { return 1; }
+//};
+
+//// SFINAE test
+//template <typename T>
+//class has_helloworld
+//{
+//    typedef char one;
+//    typedef long two;
+
+//    template <typename C> static one test( decltype(&C::helloworld) ) ;
+//    template <typename C> static two test(...);
+
+//public:
+//    enum { value = sizeof(test<T>(0)) == sizeof(char) };
+//};
+
+//int main(int argc, char *argv[])
+//{
+
+//    std::cout << sizeof(fun_trait::test(1)) << "\n";
+//    std::cout << sizeof(fun_trait::test(&Hello::helloworld)) << "\n";
+
+//    std::cout << has_helloworld<Hello>::value << std::endl;
+//    std::cout << has_helloworld<Hello2>::value << std::endl;
+//    std::cout << has_helloworld<Generic>::value << std::endl;
+//    return 0;
+//}
