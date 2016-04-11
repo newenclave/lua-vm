@@ -103,16 +103,6 @@ class lua_meta_sample {
 
     typedef lua_meta_sample this_type;
 
-    static int lcall_gc( lua_State *L )
-    {
-        void *ud = luaL_testudata( L, 1, name( ) );
-        if( ud ) {
-            lua_meta_sample *inst = static_cast<lua_meta_sample *>(ud);
-            inst->~lua_meta_sample( );
-        }
-        return 0;
-    }
-
     static lua_meta_sample *get_inst( lua_State *L )
     {
         void *ud = luaL_checkudata( L, 1, name( ) );
@@ -159,8 +149,8 @@ public:
         static
         const struct luaL_Reg lib[ ] = {
             //,{ "__gc",       &this_type::lcall_gc       }
-            //,{ "__tostring", &this_type::lcall_tostring }
-             { "print",      &this_type::lcall_print    }
+             { "__tostring", &this_type::lcall_tostring }
+            ,{ "print",      &this_type::lcall_print    }
 
             ,{ nullptr,      nullptr                    }
         };
@@ -184,7 +174,8 @@ int main( int argc, const char **argv )
     //lua_meta_sample::register_table( ls.get_state( ) );
 
     ls.register_metatable<lua_meta_sample>( );
-    ls.register_call( "new_table", &lua::state::create_metatable_call<lua_meta_sample> );
+    ls.register_call( "new_table",
+                      &lua::state::create_metatable_call<lua_meta_sample> );
 
     ls.check_call_error(ls.load_file( path ));
 
