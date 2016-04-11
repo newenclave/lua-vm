@@ -305,16 +305,16 @@ namespace lua {
             while ( lua_next( vm_, -2 ) ) {
                 lua_pushvalue( vm_, -2 );
                 objects::base_sptr first = get_type( -1 ) == LUA_TTABLE
-                        ? objects::base_sptr(new objects::reference( vm_, -1 ))
-                        : get_object( -1, flags );
+                    ? objects::base_sptr( new objects::reference( vm_, -1 ) )
+                    : get_object( -1, flags );
 
                 objects::base_sptr second = get_type( -2 ) == LUA_TTABLE
-                        ? objects::base_sptr(new objects::reference( vm_, -2 ))
-                        : get_object( -2, flags );
+                    ? objects::base_sptr( new objects::reference( vm_, -2 ) )
+                    : get_object( -2, flags );
 
-                objects::pair_sptr next_pair
-                        ( objects::new_pair( first, second ) );
-                new_table->push_back( next_pair );
+                objects::pair_sptr np( objects::new_pair( first, second ) );
+
+                new_table->push_back( np );
                 lua_pop( vm_, 2 );
             }
 
@@ -322,6 +322,7 @@ namespace lua {
             return new_table;
         }
 
+        /// bad do not use this
         objects::base_sptr get_table0( int idx = -1, unsigned flags = 0 )
         {
             lua_pushvalue( vm_, idx );
@@ -388,6 +389,127 @@ namespace lua {
             res = get_object( -1, flags );
             pop( );
             return res;
+        }
+
+        /*
+         * struc metatable_trait {
+         *      static const char *name( ); // metatable name
+         *      static const struct luaL_Reg *table( ) // table w.calls
+         * };
+         *
+         */
+        template <typename T>
+        static void register_metatable( lua_State *L )
+        {
+            static const luaL_Reg empty = { nullptr, nullptr };
+
+            bool tostr_found = false;
+            bool gc_found    = false;
+
+            std::vector<luaL_Reg> call_table;
+
+            const luaL_Reg *p = T::table( );
+
+            while( p && p->name ) {
+
+                const std::string name(p->name);
+
+                if( name == "__tostring" ) {
+                    tostr_found = true;
+                } else if( name == "__gc" ) {
+                    gc_found = true;
+                }
+
+                call_table.push_back( *p );
+                ++p;
+            }
+
+            if( !tostr_found ) {
+                luaL_Reg tostr = { "__tostring",
+                                   &state::lcall_default_tostring<T> };
+                call_table.push_back( tostr );
+            }
+
+            if( !gc_found ) {
+                luaL_Reg tostr = { "__gc", &state::lcall_default_gc<T> };
+                call_table.push_back( tostr );
+            }
+
+            call_table.push_back( empty );
+
+            objects::metatable mt( T::name( ), &call_table[0] );
+            mt.push( L );
+        }
+
+        template <typename T>
+        void register_metatable( )
+        {
+            register_metatable<T>( vm_ );
+        }
+
+        template <typename T>
+        static T *create_metatable( lua_State *L )
+        {
+            void *ud = lua_newuserdata( L, sizeof(T) );
+            if( ud ) {
+                T *inst = new (ud) T;
+                luaL_getmetatable( L, T::name( ) );
+                lua_setmetatable(L, -2);
+                return inst;
+            }
+            return nullptr;
+        }
+
+        template <typename T>
+        static int create_metatable_call( lua_State *L )
+        {
+            void *ud = lua_newuserdata( L, sizeof(T) );
+            if( ud ) {
+                new (ud) T;
+                luaL_getmetatable( L, T::name( ) );
+                lua_setmetatable( L, -2 );
+                return 1;
+            }
+            return 0;
+        }
+
+        template <typename T>
+        T *create_metatable( )
+        {
+            return create_metatable<T>( vm_ );
+        }
+
+    private:
+
+        template <typename T>
+        static T *lcall_get_instance( lua_State *L, int id )
+        {
+            void *ud = luaL_testudata( L, id, T::name( ) );
+            if( ud ) {
+                T *inst = static_cast<T *>(ud);
+                return inst;
+            }
+            return nullptr;
+        }
+
+        template <typename T>
+        static int lcall_default_tostring( lua_State *L )
+        {
+            T *inst = lcall_get_instance<T>( L, 1 );
+            std::ostringstream oss;
+            oss << T::name( ) << "@" << std::hex << inst;
+            lua_pushstring( L, oss.str( ).c_str( ) );
+            return 1;
+        }
+
+        template <typename T>
+        static int lcall_default_gc( lua_State *L )
+        {
+            T *inst = lcall_get_instance<T>( L, 1 );
+            if( inst ) {
+                inst->~T( );
+            }
+            return 0;
         }
 
     private:

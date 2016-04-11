@@ -105,7 +105,7 @@ class lua_meta_sample {
 
     static int lcall_gc( lua_State *L )
     {
-        void *ud = luaL_testudata( L, 1, meta_name( ) );
+        void *ud = luaL_testudata( L, 1, name( ) );
         if( ud ) {
             lua_meta_sample *inst = static_cast<lua_meta_sample *>(ud);
             inst->~lua_meta_sample( );
@@ -115,7 +115,7 @@ class lua_meta_sample {
 
     static lua_meta_sample *get_inst( lua_State *L )
     {
-        void *ud = luaL_checkudata( L, 1, meta_name( ) );
+        void *ud = luaL_checkudata( L, 1, name( ) );
         return static_cast<lua_meta_sample *>(ud);
     }
 
@@ -130,35 +130,41 @@ class lua_meta_sample {
         return 0;
     }
 
-public:
-
-    static int lcall_create( lua_State *L )
+    static int lcall_print( lua_State *L )
     {
-        void *ud = lua_newuserdata( L, sizeof(this_type));
-        if( ud ) {
-            new (ud) lua_meta_sample;
-            luaL_getmetatable( L, meta_name( ) );
-            lua_setmetatable(L, -2);
-            return 1;
-        }
+        lua_meta_sample *inst = get_inst( L );
+        inst->print( );
         return 0;
     }
 
-    static const char *meta_name( )
+    void print( )
     {
-        return "metaname_test";
+        std::cout << "Hello from test!\n";
     }
 
-    static void register_table( lua_State *L )
+public:
+
+    ~lua_meta_sample( )
     {
+        std::cout << "~lua_meta_sample\n";
+    }
+
+    static const char *name( )
+    {
+        return "metaname.test.test2";
+    }
+
+    static const struct luaL_Reg *table(  )
+    {
+        static
         const struct luaL_Reg lib[ ] = {
-             { "new",        &this_type::lcall_create  }
-            ,{ "__gc",       &this_type::lcall_gc  }
-            ,{ "__tostring", &this_type::lcall_tostring  }
+            //,{ "__gc",       &this_type::lcall_gc       }
+            //,{ "__tostring", &this_type::lcall_tostring }
+             { "print",      &this_type::lcall_print    }
+
+            ,{ nullptr,      nullptr                    }
         };
-        lua::state ls(L);
-        lo::metatable mt( meta_name( ), lib );
-        mt.push( L );
+        return lib;
     }
 };
 
@@ -175,8 +181,10 @@ int main( int argc, const char **argv )
     //ls.register_call( "print", &lcall_print );
     ls.register_call( "set_callback", &set_callback );
 
-    lua_meta_sample::register_table( ls.get_state( ) );
-    ls.register_call( "new_table", &lua_meta_sample::lcall_create );
+    //lua_meta_sample::register_table( ls.get_state( ) );
+
+    ls.register_metatable<lua_meta_sample>( );
+    ls.register_call( "new_table", &lua::state::create_metatable_call<lua_meta_sample> );
 
     ls.check_call_error(ls.load_file( path ));
 
