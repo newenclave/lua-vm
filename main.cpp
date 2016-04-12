@@ -158,7 +158,6 @@ public:
     }
 };
 
-
 int main( int argc, const char **argv )
 { try {
 
@@ -168,7 +167,7 @@ int main( int argc, const char **argv )
 
     ls.openlibs( );
 
-    //ls.register_call( "print", &lcall_print );
+    ls.register_call( "print", &lcall_print );
     ls.register_call( "set_callback", &set_callback );
 
     //lua_meta_sample::register_table( ls.get_state( ) );

@@ -186,7 +186,7 @@ namespace lua {
             }
         }
 
-        void push_value( int idx = -1 )
+        void push_value( int idx = 1 )
         {
             lua_pushvalue( vm_, idx );
         }
@@ -239,7 +239,7 @@ namespace lua {
             lua_pushnumber( vm_, static_cast<T>( value ) );
         }
 
-        int get_type( int id = -1 )
+        int get_type( int id = 1 )
         {
             return lua_type( vm_, id );
         }
@@ -249,13 +249,13 @@ namespace lua {
             return lua_gettop( vm_ );
         }
 
-        bool none_or_nil( int id = -1 ) const
+        bool none_or_nil( int id = 1 ) const
         {
             return lua_isnoneornil( vm_, id );
         }
 
         template<typename T>
-        T get( int id = -1 )
+        T get( int id = 1 )
         {
             typedef types::id_traits<T> traits;
             if( !traits::check( vm_, id ) ) {
@@ -269,7 +269,7 @@ namespace lua {
         }
 
         template<typename T>
-        T get_opt( int id = -1, const T& def = T( ) )
+        T get_opt( int id = 1, const T& def = T( ) )
         {
             typedef types::id_traits<T> traits;
             if( id > get_top( ) || !traits::check( vm_, id ) ) {
@@ -279,7 +279,7 @@ namespace lua {
         }
 
         template<typename T>
-        T get_field( const char *key, int id = -1 )
+        T get_field( const char *key, int id = 1 )
         {
             T p = T( );
             lua_getfield( vm_, id, key );
@@ -295,7 +295,7 @@ namespace lua {
             return p;
         }
 
-        objects::base_sptr get_table( int idx = -1, unsigned flags = 0 )
+        objects::base_sptr get_table( int idx = 1, unsigned flags = 0 )
         {
             lua_pushvalue( vm_, idx );
             lua_pushnil( vm_ );
@@ -323,7 +323,7 @@ namespace lua {
         }
 
         /// bad do not use this
-        objects::base_sptr get_table0( int idx = -1, unsigned flags = 0 )
+        objects::base_sptr get_table0( int idx = 1, unsigned flags = 0 )
         {
             lua_pushvalue( vm_, idx );
             lua_pushnil( vm_ );
@@ -343,7 +343,7 @@ namespace lua {
             return new_table;
         }
 
-        objects::base_sptr get_object( int idx = -1, unsigned flags = 0 )
+        objects::base_sptr get_object( int idx = 1, unsigned flags = 0 )
         {
 
             typedef objects::base_sptr base_sptr;
@@ -401,7 +401,7 @@ namespace lua {
         template <typename T>
         static void register_metatable( lua_State *L )
         {
-            static const luaL_Reg empty = { nullptr, nullptr };
+            static const luaL_Reg empty = { NULL, NULL };
 
             bool tostr_found = false;
             bool gc_found    = false;
@@ -457,7 +457,7 @@ namespace lua {
                 lua_setmetatable(L, -2);
                 return inst;
             }
-            return nullptr;
+            return NULL;
         }
 
         template <typename T>
@@ -479,17 +479,41 @@ namespace lua {
             return create_metatable<T>( vm_ );
         }
 
+        /// get metatable. returns null if failed
+        template <typename T>
+        static T *test_metatable( lua_State *L, int id = 1 )
+        {
+            return lcall_get_instance<T>( L, id );
+        }
+
+        template <typename T>
+        T *test_metatable( int id = 1 )
+        {
+            return lcall_get_instance<T>( vm_, id );
+        }
+
+        /// check and get metatable.
+        /// raises error if failed
+        template <typename T>
+        static T *check_metatable( lua_State *L, int id = 1 )
+        {
+            void *ud = luaL_checkudata( L, id, T::name( ) );
+            return static_cast<T *>(ud);
+        }
+
+        template <typename T>
+        T *check_metatable( int id = 1 )
+        {
+            return check_metatable<T>( vm_, id );
+        }
+
     private:
 
         template <typename T>
         static T *lcall_get_instance( lua_State *L, int id )
         {
             void *ud = luaL_testudata( L, id, T::name( ) );
-            if( ud ) {
-                T *inst = static_cast<T *>(ud);
-                return inst;
-            }
-            return nullptr;
+            return static_cast<T *>(ud);
         }
 
         template <typename T>
@@ -559,7 +583,7 @@ namespace lua {
                 lua_newtable( vm_ );
                 push( p.c_str( ) );
                 create_or_push( !*tail ? "" : tail + 1, value );
-                set_table( );
+                set_table( -3 );
             } else {
                 push( value );
             }
@@ -579,7 +603,7 @@ namespace lua {
                     pop( 1 );
                     push( p.c_str( ) );
                     create_or_push( tail + 1, value );
-                    set_table( );
+                    set_table( -3 );
                 } else {
                     set_to_stack( tail + 1, value );
                     pop( 1 );
@@ -587,7 +611,7 @@ namespace lua {
             } else {
                 push( p.c_str( ) );
                 push( value );
-                set_table( );
+                set_table( -3 );
             }
         }
 
@@ -691,7 +715,7 @@ namespace lua {
             return T( );
         }
 
-        objects::base_sptr get_ref( int idx = -1) const
+        objects::base_sptr get_ref( int idx = 1 ) const
         {
             return std::make_shared<objects::reference>( vm_, idx );
         }
@@ -744,7 +768,7 @@ namespace lua {
             }
         }
 
-        void set_value( const char *path, int idx = -1 )
+        void set_value( const char *path, int idx = 1 )
         {
             //// crutch ... WILL FIX IT LATER
             set( path, 0 );
@@ -769,7 +793,7 @@ namespace lua {
                     pop( );             // old value
                     push( pl + 1 );     // name
                     push_value( idx );  // value by index
-                    set_table( );
+                    set_table( -3 );
                     pop( level );       // clean table level
                 }
 
