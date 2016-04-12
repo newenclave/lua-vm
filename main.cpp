@@ -99,6 +99,43 @@ int set_callback( lua_State *L )
     return 0;
 }
 
+class fs_metatable {
+
+    static int tostring( lua_State *L )
+    {
+        lua::state ls(L);
+        fs_metatable *inst = ls.test_metatable<fs_metatable>( );
+        std::ostringstream oss;
+
+        oss << std::hex << "fs:" << inst;
+
+        ls.push( oss.str( ).c_str( ) );
+
+        return 1;
+    }
+
+public:
+
+    ~fs_metatable( )
+    {
+        std::cout << "~fs_metatable\n";
+    }
+
+    static const char *name( )
+    {
+        return "fstable";
+    }
+
+    static const struct luaL_Reg *table(  )
+    {
+        static const struct luaL_Reg lib[ ] = {
+            { "__tostring", &tostring }
+           ,{NULL, NULL}
+        };
+        return lib;
+    }
+};
+
 class lua_meta_sample {
 
     typedef lua_meta_sample this_type;
@@ -167,14 +204,20 @@ int main( int argc, const char **argv )
 
     ls.openlibs( );
 
-    ls.register_call( "print", &lcall_print );
+    //ls.register_call( "print", &lcall_print );
     ls.register_call( "set_callback", &set_callback );
 
     //lua_meta_sample::register_table( ls.get_state( ) );
 
     ls.register_metatable<lua_meta_sample>( );
+    ls.register_metatable<fs_metatable>( );
+
     ls.register_call( "new_table",
                       &lua::state::create_metatable_call<lua_meta_sample> );
+
+    ls.register_call( "new_fs",
+                      &lua::state::create_metatable_call<fs_metatable>);
+
 
     ls.check_call_error(ls.load_file( path ));
 
