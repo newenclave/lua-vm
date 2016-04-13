@@ -93,9 +93,9 @@ namespace lua { namespace objects {
             return false;
         }
 
-        virtual bool is_reference( ) const
+        bool is_reference( ) const
         {
-            return false;
+            return 0 != (type_id( ) & TYPE_REFERENCE);
         }
 
         virtual base * clone( ) const = 0;
@@ -827,11 +827,6 @@ namespace lua { namespace objects {
         int type_id( ) const
         {
             return type_;
-        }
-
-        bool is_reference( ) const
-        {
-            return true;
         }
 
         virtual base *clone( ) const
