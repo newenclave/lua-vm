@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <sstream>
 #include <vector>
+#include <list>
 #include <stdlib.h>
 
 #include <memory>
@@ -48,9 +49,94 @@ void print_sptr( lua_State *L, const lo::base *o_, int iii )
     }
 }
 
+
+std::list<std::string> split_string( const char *str )
+{
+    std::list<std::string> res;
+    std::string next;
+    next.reserve( 16 );
+    for( ; *str; ++str ) {
+        switch( *str ) {
+        case '.':
+            res.push_back( next );
+            next.clear( );
+            break;
+        case '\\':
+            ++str;
+            if( !*str ) {
+                break;
+            }
+        default:
+            next.push_back( *str );
+            break;
+        }
+    }
+    if( !next.empty( ) ) {
+        res.push_back( next );
+    }
+    return res;
+}
+
+
+lo::base_sptr get_by_path( lua_State *L, const lo::base *o, const char *str )
+{
+    lo::base_sptr result;
+    std::list<std::string> res = split_string( str );
+
+    size_t len = res.size( );
+
+    lua::state ls(L);
+    lo::base_sptr tmp;
+
+    for( auto &s: res ) {
+
+        if( o->is_reference( ) ) {
+            tmp = ls.ref_to_object( o );
+            o = tmp.get( );
+        }
+
+        if( o->type_id( ) != lo::base::TYPE_TABLE ) {
+            break;
+        }
+
+        bool found = false;
+
+        for( size_t i=0; i<o->count( ); ++i ) {
+            const lo::base *next = o->at( i );
+            if( next->at( 0 )->str( ) == s ) {
+                o = next->at( 1 );
+                found = true;
+                break;
+            }
+        }
+
+        if( !found ) {
+            break;
+        }
+
+        if( 0 == --len ) {
+            if( o->is_reference( ) ) {
+                result = ls.ref_to_object( o, 1 );
+            } else {
+                result.reset( o->clone( ) );
+            }
+        }
+    }
+
+    return result;
+}
+
 int lcall_print( lua_State *L )
 {
     lua::state ls(L);
+    lo::base_sptr bp( ls.get_object( 1, 1 ) );
+
+    auto r = get_by_path( L, bp.get( ), "m.m.m.m.m.cool" );
+
+    std::cout << r->str( ) << "\n";
+
+    return 0;
+
     int n = ls.get_top( );
     for( int i=1; i<=n; ++i ) {
         lo::base_sptr bp( ls.get_object( i, 1 ) );
@@ -130,7 +216,7 @@ public:
     {
         static const struct luaL_Reg lib[ ] = {
             { "__tostring", &tostring }
-           ,{NULL, NULL}
+           ,{ NULL, NULL }
         };
         return lib;
     }
@@ -204,7 +290,7 @@ int main( int argc, const char **argv )
 
     ls.openlibs( );
 
-    //ls.register_call( "print", &lcall_print );
+    ls.register_call( "print", &lcall_print );
     ls.register_call( "set_callback", &set_callback );
 
     //lua_meta_sample::register_table( ls.get_state( ) );

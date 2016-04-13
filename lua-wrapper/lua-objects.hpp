@@ -93,6 +93,11 @@ namespace lua { namespace objects {
             return false;
         }
 
+        virtual bool is_reference( ) const
+        {
+            return false;
+        }
+
         virtual base * clone( ) const = 0;
 //        {
 //            return new base;
@@ -819,16 +824,23 @@ namespace lua { namespace objects {
             luaL_unref( state_, LUA_REGISTRYINDEX, ref_ );
         }
 
-        virtual int type_id( ) const
+        int type_id( ) const
         {
             return type_;
+        }
+
+        bool is_reference( ) const
+        {
+            return true;
         }
 
         virtual base *clone( ) const
         {
             push( state_ );
             int new_ref = luaL_ref( state_, LUA_REGISTRYINDEX );
-            return new reference( state_, 0, new_ref );
+            reference *nr = new reference( state_, 0, new_ref );
+            nr->type_ = type_;
+            return nr;
         }
 
         void push( lua_State *L ) const
