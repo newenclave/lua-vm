@@ -131,7 +131,7 @@ int lcall_print( lua_State *L )
     lua::state ls(L);
     lo::base_sptr bp( ls.get_object( 1, 1 ) );
 
-    auto r = get_by_path( L, bp.get( ), "m.m.m.m.m.cool" );
+    auto r = get_by_path( L, bp.get( ), "m.m.m.m" );
 
     std::cout << r->str( ) << "\n";
 
