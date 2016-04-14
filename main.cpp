@@ -123,10 +123,18 @@ class fs_metatable {
         return 1;
     }
 
+    void *test_;
+
 public:
+
+    fs_metatable( )
+    {
+        test_ = malloc( 10112233 );
+    }
 
     ~fs_metatable( )
     {
+        free( test_ );
         std::cout << "~fs_metatable\n";
     }
 
@@ -230,11 +238,8 @@ int main( int argc, const char **argv )
     ls.register_metatable<lua_meta_sample>( );
     ls.register_metatable<fs_metatable>( );
 
-    ls.register_call( "new_table",
-                      &lua::state::create_metatable_call<lua_meta_sample> );
-
-    ls.register_call( "new_fs",
-                      &lua::state::create_metatable_call<fs_metatable>);
+    ls.register_call( "new_table", &lua::state::create_metatable_call<lua_meta_sample> );
+    ls.register_call( "new_fs",    &lua::state::create_metatable_call<fs_metatable>);
 
 //    lua_sethook( ls.get_state( ), hook, -1, 1000000 );
 
