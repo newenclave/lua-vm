@@ -98,6 +98,11 @@ namespace lua { namespace objects {
             return 0 != (type_id( ) & TYPE_REFERENCE);
         }
 
+        static bool is_reference( const base *o )
+        {
+            return 0 != (o->type_id( ) & TYPE_REFERENCE);
+        }
+
         virtual base * clone( ) const = 0;
 //        {
 //            return new base;
@@ -832,9 +837,9 @@ namespace lua { namespace objects {
         virtual base *clone( ) const
         {
             push( state_ );
-            int new_ref = luaL_ref( state_, LUA_REGISTRYINDEX );
+            int new_ref   = luaL_ref( state_, LUA_REGISTRYINDEX );
             reference *nr = new reference( state_, 0, new_ref );
-            nr->type_ = type_;
+            nr->type_     = type_;
             return nr;
         }
 

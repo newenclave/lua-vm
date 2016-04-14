@@ -57,6 +57,17 @@ std::list<std::string> split_string( const char *str )
     next.reserve( 16 );
     for( ; *str; ++str ) {
         switch( *str ) {
+        case '\'':
+            ++str;
+            while( *str ) {
+                if( *str == '\\' ) {
+                    ++str;
+                } else if( *str == '\'' ) {
+                    break;
+                }
+                next.push_back( *str++ );
+            }
+            break;
         case '.':
             res.push_back( next );
             next.clear( );
@@ -131,7 +142,7 @@ int lcall_print( lua_State *L )
     lua::state ls(L);
     lo::base_sptr bp( ls.get_object( 1, 1 ) );
 
-    auto r = get_by_path( L, bp.get( ), "m.m.m.m" );
+    auto r = get_by_path( L, bp.get( ), "m.m.m.m.'cool'" );
 
     std::cout << r->str( ) << "\n";
 
@@ -281,6 +292,15 @@ public:
     }
 };
 
+//typedef void (*lua_Hook) (lua_State *L, lua_Debug *ar);
+
+void hook( lua_State *L, lua_Debug *ar )
+{
+    std::cout << "Hook! " << ar->event << "\n";
+    lua::state ls(L);
+    luaL_error( L, "Error toolong" );
+}
+
 int main( int argc, const char **argv )
 { try {
 
@@ -304,6 +324,7 @@ int main( int argc, const char **argv )
     ls.register_call( "new_fs",
                       &lua::state::create_metatable_call<fs_metatable>);
 
+//    lua_sethook( ls.get_state( ), hook, -1, 1000000 );
 
     ls.check_call_error(ls.load_file( path ));
 
