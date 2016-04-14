@@ -2,6 +2,7 @@
 #define LUA_WRAPPER_HPP
 
 #include <stdexcept>
+#include <list>
 
 #include <stdlib.h>
 
@@ -886,6 +887,105 @@ namespace lua {
         }
     };
     typedef std::shared_ptr<state> state_sptr;
+
+    inline void split_path( const char *str, std::list<std::string> &res )
+    {
+        std::list<std::string> tmp;
+
+        std::string next;
+
+        next.reserve( 16 );
+
+        for( ; *str; ++str ) {
+
+            switch( *str ) {
+            case '\'':
+                ++str;
+                while( *str ) {
+                    if( *str == '\\' ) {
+                        ++str;
+                    } else if( *str == '\'' ) {
+                        break;
+                    }
+                    next.push_back( *str++ );
+                }
+                break;
+            case '.':
+                tmp.push_back( next );
+                next.clear( );
+                break;
+            case '\\':
+                ++str;
+                if( !*str ) {
+                    break;
+                }
+            default:
+                next.push_back( *str );
+                break;
+            }
+        }
+        if( !next.empty( ) ) {
+            res.push_back( next );
+        }
+        res.swap( tmp );
+    }
+
+    inline objects::base_sptr object_by_path( lua_State *L,
+                                              const objects::base *o,
+                                              const char *str )
+    {
+        typedef std::list<std::string>::iterator iter;
+
+        objects::base_sptr result;
+
+        std::list<std::string> res;
+        split_path( str, res );
+
+        size_t len = res.size( );
+
+        lua::state ls(L);
+        objects::base_sptr tmp;
+
+        for( iter b(res.begin( )), e(res.end( )); b != e; ++b ) {
+
+            const std::string &s(*b);
+
+            if( objects::base::is_reference( o ) ) {
+                tmp = ls.ref_to_object( o );
+                o = tmp.get( );
+            }
+
+            if( o->type_id( ) != objects::base::TYPE_TABLE ) {
+                break;
+            }
+
+            bool found = false;
+
+            for( size_t i=0; i<o->count( ); ++i ) {
+                const objects::base *next = o->at( i );
+                if( next->at( 0 )->str( ) == s ) {
+                    o = next->at( 1 );
+                    found = true;
+                    break;
+                }
+            }
+
+            if( !found ) {
+                break;
+            }
+
+            if( 0 == --len ) {
+                if( objects::base::is_reference( o ) ) {
+                    result = ls.ref_to_object( o, 1 );
+                } else {
+                    result.reset( o->clone( ) );
+                }
+            }
+        }
+        return result;
+    }
+
+
 }
 
 #ifdef LUA_WRAPPER_TOP_NAMESPACE
