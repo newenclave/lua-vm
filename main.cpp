@@ -129,7 +129,7 @@ public:
 
     fs_metatable( )
     {
-        test_ = malloc( 10112233 );
+        test_ = malloc( 1011223 );
     }
 
     ~fs_metatable( )
