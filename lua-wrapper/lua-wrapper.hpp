@@ -240,6 +240,17 @@ namespace lua {
             lua_pushnumber( vm_, static_cast<T>( value ) );
         }
 
+        template <typename ErrT>
+        int push_nil_error( ErrT err, int def_params = 0 )
+        {
+            int res = def_params;
+            while ( def_params-- ) {
+                push( );
+            }
+            push( err );
+            return res + 1;
+        }
+
         int get_type( int id = 1 )
         {
             return lua_type( vm_, id );
