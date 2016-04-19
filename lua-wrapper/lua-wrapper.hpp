@@ -187,7 +187,7 @@ namespace lua {
             }
         }
 
-        void push_value( int idx = 1 )
+        void push_value( int idx = -1 )
         {
             lua_pushvalue( vm_, idx );
         }
@@ -241,7 +241,7 @@ namespace lua {
         }
 
         template <typename ErrT>
-        int push_nil_error( ErrT err, int def_params = 0 )
+        int push_nil_error( ErrT err, int def_params = 1 )
         {
             int res = def_params;
             while ( def_params-- ) {
@@ -251,7 +251,7 @@ namespace lua {
             return res + 1;
         }
 
-        int get_type( int id = 1 )
+        int get_type( int id = -1 )
         {
             return lua_type( vm_, id );
         }
@@ -261,13 +261,12 @@ namespace lua {
             return lua_gettop( vm_ );
         }
 
-        bool none_or_nil( int id = 1 ) const
+        bool none_or_nil( int id = -1 ) const
         {
             return lua_isnoneornil( vm_, id );
         }
-
         template<typename T>
-        T get( int id = 1 )
+        T get( int id = -1 )
         {
             typedef types::id_traits<T> traits;
             if( !traits::check( vm_, id ) ) {
@@ -281,7 +280,7 @@ namespace lua {
         }
 
         template<typename T>
-        T get_opt( int id = 1, const T& def = T( ) )
+        T get_opt( int id = -1, const T& def = T( ) )
         {
             typedef types::id_traits<T> traits;
             if( id > get_top( ) || !traits::check( vm_, id ) ) {
@@ -291,7 +290,7 @@ namespace lua {
         }
 
         template<typename T>
-        T get_field( const char *key, int id = 1 )
+        T get_field( const char *key, int id = -1 )
         {
             T p = T( );
             lua_getfield( vm_, id, key );
@@ -307,7 +306,7 @@ namespace lua {
             return p;
         }
 
-        objects::base_sptr get_table( int idx = 1, unsigned flags = 0 )
+        objects::base_sptr get_table( int idx = -1, unsigned flags = 0 )
         {
             lua_pushvalue( vm_, idx );
             lua_pushnil( vm_ );
@@ -335,7 +334,7 @@ namespace lua {
         }
 
         /// bad do not use this
-        objects::base_sptr get_table0( int idx = 1, unsigned flags = 0 )
+        objects::base_sptr get_table0( int idx = -1, unsigned flags = 0 )
         {
             lua_pushvalue( vm_, idx );
             lua_pushnil( vm_ );
@@ -355,7 +354,7 @@ namespace lua {
             return new_table;
         }
 
-        objects::base_sptr get_object( int idx = 1, unsigned flags = 0 )
+        objects::base_sptr get_object( int idx = -1, unsigned flags = 0 )
         {
 
             typedef objects::base_sptr base_sptr;
@@ -493,13 +492,13 @@ namespace lua {
 
         /// get metatable. returns null if failed
         template <typename T>
-        static T *test_metatable( lua_State *L, int id = 1 )
+        static T *test_metatable( lua_State *L, int id = -1 )
         {
             return lcall_get_instance<T>( L, id );
         }
 
         template <typename T>
-        T *test_metatable( int id = 1 )
+        T *test_metatable( int id = -1 )
         {
             return lcall_get_instance<T>( vm_, id );
         }
@@ -507,14 +506,14 @@ namespace lua {
         /// check and get metatable.
         /// raises error if failed
         template <typename T>
-        static T *check_metatable( lua_State *L, int id = 1 )
+        static T *check_metatable( lua_State *L, int id = -1 )
         {
             void *ud = luaL_checkudata( L, id, T::name( ) );
             return static_cast<T *>(ud);
         }
 
         template <typename T>
-        T *check_metatable( int id = 1 )
+        T *check_metatable( int id = -1 )
         {
             return check_metatable<T>( vm_, id );
         }
@@ -727,7 +726,7 @@ namespace lua {
             return T( );
         }
 
-        objects::base_sptr get_ref( int idx = 1 ) const
+        objects::base_sptr get_ref( int idx = -1 ) const
         {
             return std::make_shared<objects::reference>( vm_, idx );
         }
@@ -780,7 +779,7 @@ namespace lua {
             }
         }
 
-        void set_value( const char *path, int idx = 1 )
+        void set_value( const char *path, int idx = -1 )
         {
             //// crutch ... WILL FIX IT LATER
             set( path, 0 );
