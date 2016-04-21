@@ -935,7 +935,7 @@ namespace lua {
             }
         }
         if( !next.empty( ) ) {
-            res.push_back( next );
+            tmp.push_back( next );
         }
         res.swap( tmp );
     }
