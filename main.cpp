@@ -54,11 +54,11 @@ int lcall_print( lua_State *L )
     lua::state ls(L);
     lo::base_sptr bp( ls.get_object( 1, 1 ) );
 
-    auto r = lua::object_by_path( L, bp.get( ), "m.m.m.m.'cool'" );
+    auto r = lua::object_by_path( L, bp.get( ), "'1'" );
 
     std::cout << r->str( ) << "\n";
 
-    return 0;
+//    return 0;
 
     int n = ls.get_top( );
     for( int i=1; i<=n; ++i ) {

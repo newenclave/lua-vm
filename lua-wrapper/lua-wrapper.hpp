@@ -898,19 +898,71 @@ namespace lua {
     };
     typedef std::shared_ptr<state> state_sptr;
 
-    inline void split_path( const char *str, std::list<std::string> &res )
+    struct path_element_info{
+
+        std::string name_;
+        int         type_;
+        int         res_type_;
+
+        path_element_info( const std::string &name )
+            :name_(name)
+            ,type_(objects::base::TYPE_NONE)
+            ,res_type_(objects::base::TYPE_NONE)
+        { }
+
+        path_element_info( )
+            :type_(objects::base::TYPE_NONE)
+            ,res_type_(objects::base::TYPE_NONE)
+        { }
+
+        void push_back( std::string::value_type c )
+        {
+            name_.push_back( c );
+        }
+
+        void clear( )
+        {
+            name_.clear( );
+            type_ = objects::base::TYPE_NONE;
+        }
+
+        bool empty( ) const
+        {
+            return name_.empty( );
+        }
+
+        bool check( const std::string &n, int t ) const
+        {
+            return (name_ == n) &&
+                 ( (type_ == objects::base::TYPE_NONE)
+                           ? true
+                           : type_ == t );
+        }
+
+        bool check_res_type( int t ) const
+        {
+            return ( (res_type_ == objects::base::TYPE_NONE)
+                           ? true
+                           : type_ == t );
+        }
+    };
+
+    typedef std::list<path_element_info> path_element_info_list;
+
+    inline void split_path( const char *str, path_element_info_list &res )
     {
-        std::list<std::string> tmp;
+        path_element_info_list tmp;
 
-        std::string next;
+        path_element_info next;
 
-        next.reserve( 16 );
+        next.name_.reserve( 16 );
 
         for( ; *str; ++str ) {
 
             switch( *str ) {
             case '\'':
                 ++str;
+                next.type_ = objects::base::TYPE_STRING;
                 while( *str ) {
                     if( *str == '\\' ) {
                         ++str;
@@ -944,11 +996,11 @@ namespace lua {
                                               const objects::base *o,
                                               const char *str )
     {
-        typedef std::list<std::string>::iterator iter;
+        typedef path_element_info_list::iterator iter;
 
         objects::base_sptr result;
 
-        std::list<std::string> res;
+        path_element_info_list res;
         split_path( str, res );
 
         size_t len = res.size( );
@@ -958,7 +1010,8 @@ namespace lua {
 
         for( iter b(res.begin( )), e(res.end( )); b != e; ++b ) {
 
-            const std::string &s(*b);
+            const std::string &s(b->name_);
+            int t = b->type_;
 
             if( objects::base::is_reference( o ) ) {
                 tmp = ls.ref_to_object( o );
@@ -973,7 +1026,8 @@ namespace lua {
 
             for( size_t i=0; i<o->count( ); ++i ) {
                 const objects::base *next = o->at( i );
-                if( next->at( 0 )->str( ) == s ) {
+                const objects::base *name = next->at( 0 );
+                if( b->check( name->str( ), name->type_id( ) ) ) {
                     o = next->at( 1 );
                     found = true;
                     break;
