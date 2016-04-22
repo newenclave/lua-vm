@@ -1049,7 +1049,6 @@ namespace lua {
         return result;
     }
 
-
 }
 
 #ifdef LUA_WRAPPER_TOP_NAMESPACE
