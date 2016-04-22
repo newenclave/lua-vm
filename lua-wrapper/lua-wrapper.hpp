@@ -1010,9 +1010,6 @@ namespace lua {
 
         for( iter b(res.begin( )), e(res.end( )); b != e; ++b ) {
 
-            const std::string &s(b->name_);
-            int t = b->type_;
-
             if( objects::base::is_reference( o ) ) {
                 tmp = ls.ref_to_object( o );
                 o = tmp.get( );
