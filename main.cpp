@@ -54,7 +54,7 @@ int lcall_print( lua_State *L )
     lua::state ls(L);
     lo::base_sptr bp( ls.get_object( 1, 1 ) );
 
-    auto r = lua::object_by_path( L, bp.get( ), "f" );
+    auto r = lua::object_wrapper( L, bp.get( ) )["f"].as_object( );
 
     std::cout << r->str( ) << "\n";
 

@@ -1072,7 +1072,7 @@ namespace lua {
             ,ptr_(p)
         { }
 
-        object_wrapper operator [] ( const std::string &path ) const
+        object_wrapper operator [ ]( const std::string &path ) const
         {
             auto obj = object_by_path( state_, ptr_.get( ), path.c_str( ) );
             return object_wrapper( state_, obj );
@@ -1114,7 +1114,15 @@ namespace lua {
             return def;
         }
 
-        std::uint32_t as_uint32( std::uint32_t def = 0 )
+//        std::uint32_t as_uint32( std::uint32_t def = 0 )
+//        {
+//            if( ptr_ && is_number( ) ) {
+//                return ptr_->inum( );
+//            }
+//            return def;
+//        }
+
+        lua_Integer as_int( lua_Integer def = 0 )
         {
             if( ptr_ && is_number( ) ) {
                 return ptr_->inum( );
@@ -1134,6 +1142,12 @@ namespace lua {
         {
             return state_;
         }
+
+//        operator bool ( ) const
+//        {
+//            return !!ptr_;
+//        }
+
     };
 
 
