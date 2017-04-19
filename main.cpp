@@ -221,6 +221,43 @@ void hook( lua_State *L, lua_Debug *ar )
     luaL_error( L, "Error toolong" );
 }
 
+const std::string buf =
+        "test = { } "
+        "test.test = \"Hello!\" "
+        "test.a = { { 'test bla bla lb', 1000.990, ['2'] = 2222 }, "
+        "           r = \"World\" } "
+        "test.a['here is cool string'] = 'bla bla bla'"
+        "test.a.b = { testb = 1 }"
+        "test_call(test)"
+        ;
+
+void get_object( lua_State *L, const char *path, int id = 1 )
+{
+    lua::state ls(L);
+    auto obj = ls.get_object( id );
+    auto o = lua::object_wrapper::object_by_path( L, obj.get( ), path );
+    if( o ) {
+        std::cout << "'" << path << "' = " << o->str( ) << "\n";
+    } else {
+        std::cout << "'" << path << "' was not found\n";
+    }
+}
+
+int lcall_table_access( lua_State *L )
+{
+    get_object( L, "test" );
+    get_object( L, "a" );
+    get_object( L, "a.'here is cool string'" );
+    get_object( L, "a.\"here is cool string\"" );
+    get_object( L, "a.b" );
+    get_object( L, "a.b.testb" );
+
+    get_object( L, "a.1" );
+    get_object( L, "a.1.1" );
+    get_object( L, "a.1.2" );
+    return 0;
+}
+
 int main( int argc, const char **argv )
 { try {
 
@@ -232,6 +269,7 @@ int main( int argc, const char **argv )
 
     ls.register_call( "print", &lcall_print );
     ls.register_call( "set_callback", &set_callback );
+    ls.register_call( "test_call", &lcall_table_access );
 
     //lua_meta_sample::register_table( ls.get_state( ) );
 
@@ -243,7 +281,9 @@ int main( int argc, const char **argv )
 
 //    lua_sethook( ls.get_state( ), hook, -1, 1000000 );
 
-    ls.check_call_error(ls.load_file( path ));
+    ls.check_call_error(ls.load_buffer( buf.c_str( ), buf.size( ), "CLL" ));
+    //ls.check_call_error(ls.load_file( path ));
+
 
     return 0;
 

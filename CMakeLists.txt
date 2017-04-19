@@ -4,6 +4,9 @@ set( PROJECT_NAME lua_test )
 
 project( ${PROJECT_NAME} )
 
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED 11)
+
 list( APPEND src . )
 
 foreach( dir ${src} )
@@ -50,5 +53,3 @@ else( )
     endif( )
 
 endif( )
-
-set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")

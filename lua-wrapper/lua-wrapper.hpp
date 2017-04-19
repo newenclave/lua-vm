@@ -705,12 +705,14 @@ namespace lua {
             if( pl == path ) {
                 get_global( pl );
                 T val = T( );
-                if( !none_or_nil(  ) ) try {
-                    val = get<T>( );
-                    pop( );
-                } catch( ... ) {
-                    pop( );
-                    throw;
+                if( !none_or_nil(  ) ) {
+                    try {
+                        val = get<T>( );
+                        pop( );
+                    } catch( ... ) {
+                        pop( );
+                        throw;
+                    }
                 }
                 return val;
             } else {
@@ -830,7 +832,8 @@ namespace lua {
         {
             lua_getglobal( vm_, func );
             push_object_list( bo );
-            int rc = lua_pcall( vm_, bo.size( ), LUA_MULTRET, 0 );
+            int rc = lua_pcall( vm_, static_cast<int>(bo.size( )),
+                                LUA_MULTRET, 0 );
             return rc;
         }
 
@@ -852,7 +855,8 @@ namespace lua {
             lua_getglobal( vm_, func );
             push( p0 );
             push_object_list( bo );
-            int rc = lua_pcall( vm_, 1 + bo.size( ), LUA_MULTRET, 0 );
+            int rc = lua_pcall( vm_, 1 + static_cast<int>(bo.size( )),
+                                LUA_MULTRET, 0 );
             return rc;
         }
 
@@ -874,7 +878,8 @@ namespace lua {
             push( p0 );
             push( p1 );
             push_object_list( bo );
-            int rc = lua_pcall( vm_, 2 + bo.size( ), LUA_MULTRET, 0 );
+            int rc = lua_pcall( vm_, 2 + static_cast<int>(bo.size( )),
+                                LUA_MULTRET, 0 );
             return rc;
         }
 
@@ -959,7 +964,40 @@ namespace lua {
         lua_State          *state_;
         objects::base_sptr  ptr_;
 
-        static void split_path( const char *str, path_element_info_list &res )
+        static
+        char open_to_close( char open )
+        {
+            char res = open;
+            switch( open ) {
+            case '[':
+                res = ']';
+                break;
+            }
+            return res;
+        }
+
+        static
+        const char *parse_element( const char *str, path_element_info &next )
+        {
+            char closechar = open_to_close( *str );
+            ++str;
+            while( *str ) {
+                if( *str == '\\' ) {
+                    ++str;
+                    if( *str ) {
+                        next.push_back( *str++ );
+                    }
+                } else if( *str == closechar ) {
+                    break;
+                } else {
+                    next.push_back( *str++ );
+                }
+            }
+            return str;
+        }
+
+        static
+        void split_path( const char *str, path_element_info_list &res )
         {
             path_element_info_list tmp;
 
@@ -971,16 +1009,9 @@ namespace lua {
 
                 switch( *str ) {
                 case '\'':
-                    ++str;
+                case '"':
                     next.type_ = objects::base::TYPE_STRING;
-                    while( *str ) {
-                        if( *str == '\\' ) {
-                            ++str;
-                        } else if( *str == '\'' ) {
-                            break;
-                        }
-                        next.push_back( *str++ );
-                    }
+                    str = parse_element( str, next );
                     break;
                 case '.':
                     tmp.push_back( next );
@@ -991,6 +1022,8 @@ namespace lua {
                     if( !*str ) {
                         break;
                     }
+                    next.push_back( *str ); /// avoid clang warning
+                    break;
                 default:
                     next.push_back( *str );
                     break;
@@ -1002,9 +1035,11 @@ namespace lua {
             res.swap( tmp );
         }
 
-        static objects::base_sptr object_by_path( lua_State *L,
-                                                  const objects::base *o,
-                                                  const char *str )
+    public:
+
+        static
+        objects::base_sptr object_by_path( lua_State *L, const objects::base *o,
+                                           const char *str )
         {
             typedef path_element_info_list::iterator iter;
 
@@ -1059,8 +1094,6 @@ namespace lua {
             }
             return result;
         }
-
-    public:
 
         object_wrapper( lua_State *s, const objects::base *p )
             :state_(s)

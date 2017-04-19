@@ -199,12 +199,12 @@ namespace lua { namespace objects {
         nil( )
         { }
 
-        virtual int type_id( ) const
+        int type_id( ) const
         {
             return base::TYPE_NIL;
         }
 
-        virtual base *clone( ) const
+        base *clone( ) const
         {
             return new nil;
         }
@@ -359,12 +359,12 @@ namespace lua { namespace objects {
 
         virtual base *clone( ) const
         {
-            return new integer( num_ );
+            return new integer( lua_Integer(num_) );
         }
 
         void push( lua_State *L ) const
         {
-            lua_pushinteger( L, num_ );
+            lua_pushinteger( L, lua_Integer(num_) );
         }
 
         std::string str( ) const
@@ -564,7 +564,7 @@ namespace lua { namespace objects {
 
         typedef std::vector<pair_sptr> pair_vector;
         pair_vector list_;
-        size_t      index_;
+        lua_Integer index_;
 
     public:
 
@@ -595,7 +595,7 @@ namespace lua { namespace objects {
         const base * at( size_t index ) const
         {
             return list_[index].get( );
-        }        
+        }
 
         void push_back( const pair_sptr &val )
         {
@@ -692,7 +692,7 @@ namespace lua { namespace objects {
         {
             typedef pair_vector::const_iterator citr;
             lua_newtable( L );
-            size_t len = index_;
+            lua_Integer len = index_;
             for( citr b(list_.begin( )), e(list_.end( )); b!=e; ++b ) {
                 size_t n((*b)->nil_size( ));
                 switch (n) {
@@ -777,7 +777,7 @@ namespace lua { namespace objects {
                 luaL_setfuncs( L, funcs_, 0 ); /// push function lists
             }
 
-            size_t len = index_;
+            lua_Integer len = index_;
             for( citr b(list_.begin( )), e(list_.end( )); b!=e; ++b ) {
                 size_t n((*b)->nil_size( ));
                 switch (n) {
