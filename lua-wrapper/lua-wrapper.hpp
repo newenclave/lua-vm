@@ -580,7 +580,7 @@ namespace lua {
         {
             const char *p = path;
             for( ; *p && (*p != '.'); ++p );
-            return p - path;
+            return static_cast<size_t>(p - path);
         }
 
         static const char *path_leaf( const char *path )
@@ -723,7 +723,7 @@ namespace lua {
                 }
                 return val;
             } else {
-                std::string tpath( path, (pl - path) );
+                std::string tpath( path, static_cast<size_t>(pl - path) );
                 int level = get_table( tpath.c_str( ) );
                 if( level ) {
                     T val = T( );
@@ -756,7 +756,7 @@ namespace lua {
                     pop( );
                 }
             } else {
-                std::string tpath( path, (pl - path) );
+                std::string tpath( path, static_cast<size_t>(pl - path) );
                 int level = get_table( tpath.c_str( ) );
                 if( level ) {
                     lua_getfield( vm_, -1, pl + 1 );
@@ -808,7 +808,7 @@ namespace lua {
 
             } else {
 
-                std::string tpath( path, (pl - path) );
+                std::string tpath( path, static_cast<size_t>(pl - path) );
 
                 int level = get_table( tpath.c_str( ) ); // set table level
 
