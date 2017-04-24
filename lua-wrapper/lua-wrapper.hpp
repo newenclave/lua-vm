@@ -312,34 +312,6 @@ namespace lua {
             return base_sptr( new objects::reference( vm_, idx ) );
         }
 
-        objects::base_sptr get_table( int idx = -1, unsigned flags = 0 )
-        {
-            lua_pushvalue( vm_, idx );
-            lua_pushnil( vm_ );
-
-            objects::table_sptr new_table( objects::new_table( ) );
-
-            while ( lua_next( vm_, -2 ) ) {
-                lua_pushvalue( vm_, -2 );
-
-                objects::base_sptr first = (get_type( -1 ) == LUA_TTABLE)
-                    ? get_reference( -1 )
-                    : get_object( -1, flags );
-
-                objects::base_sptr second = (get_type( -2 ) == LUA_TTABLE)
-                    ? get_reference( -2 )
-                    : get_object( -2, flags );
-
-                objects::pair_sptr np( objects::new_pair( first, second ) );
-
-                new_table->push_back( np );
-                lua_pop( vm_, 2 );
-            }
-
-            lua_pop( vm_, 1 );
-            return new_table;
-        }
-
         /// bad do not use this
         objects::base_sptr get_table_deep( unsigned deepness,
                                            int idx = -1, unsigned flags = 0 )
@@ -384,41 +356,9 @@ namespace lua {
             return new_table;
         }
 
-        objects::base_sptr get_object( int idx = -1, unsigned flags = 0 )
+        objects::base_sptr get_table( int idx = -1, unsigned flags = 0 )
         {
-
-            typedef objects::base_sptr base_sptr;
-
-            int t = lua_type( vm_, idx );
-            switch( t ) {
-            case LUA_TBOOLEAN:
-                return base_sptr(
-                    new objects::boolean( !!lua_toboolean( vm_, idx ) ));
-            case LUA_TLIGHTUSERDATA:
-            case LUA_TUSERDATA:
-                return base_sptr(
-                    new objects::light_userdata( lua_touserdata( vm_, idx ) ));
-            case LUA_TNUMBER:
-                return flags
-                  ? base_sptr(new objects::integer( lua_tointeger( vm_, idx ) ))
-                  : base_sptr(new objects::number( lua_tonumber( vm_, idx ) )) ;
-            case LUA_TSTRING: {
-                    size_t length = 0;
-                    const char *ptr = lua_tolstring( vm_, idx, &length );
-                    return base_sptr(new objects::string( ptr, length ));
-                }
-            case LUA_TFUNCTION:
-                 return base_sptr(new objects::reference( vm_, idx ));
-            case LUA_TTABLE:
-                return get_table( idx, flags );
-            case LUA_TTHREAD:
-                return base_sptr(
-                    new objects::thread( vm_, lua_tothread( vm_, idx ) ));
-
-        //    case LUA_TUSERDATA:
-        //        return "userdata";
-            }
-            return base_sptr(new objects::nil);
+            return get_table_deep( 0, idx, flags );
         }
 
         objects::base_sptr get_object_deep( unsigned deepness,
@@ -457,6 +397,11 @@ namespace lua {
         //        return "userdata";
             }
             return base_sptr(new objects::nil);
+        }
+
+        objects::base_sptr get_object( int idx = -1, unsigned flags = 0 )
+        {
+           return get_object_deep( 0, idx, flags );
         }
 
         objects::base_sptr ref_to_object( const objects::base *o,
