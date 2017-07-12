@@ -504,13 +504,13 @@ namespace lua {
 
         /// get metatable. returns null if failed
         template <typename T>
-        static T *test_metatable( lua_State *L, int id = -1 )
+        static T *test_metatable( lua_State *L, int id = 1 )
         {
             return lcall_get_instance<T>( L, id );
         }
 
         template <typename T>
-        T *test_metatable( int id = -1 )
+        T *test_metatable( int id = 1 )
         {
             return lcall_get_instance<T>( vm_, id );
         }
@@ -518,14 +518,14 @@ namespace lua {
         /// check and get metatable.
         /// raises error if failed
         template <typename T>
-        static T *check_metatable( lua_State *L, int id = -1 )
+        static T *check_metatable( lua_State *L, int id = 1 )
         {
             void *ud = luaL_checkudata( L, id, T::name( ) );
             return static_cast<T *>(ud);
         }
 
         template <typename T>
-        T *check_metatable( int id = -1 )
+        T *check_metatable( int id = 1 )
         {
             return check_metatable<T>( vm_, id );
         }
