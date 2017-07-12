@@ -470,12 +470,12 @@ namespace lua {
             register_metatable<T>( vm_ );
         }
 
-        template <typename T>
-        static T *create_metatable( lua_State *L )
+        template <typename T, typename ...Args>
+        static T *create_metatable( lua_State *L, Args&& ... args )
         {
             void *ud = lua_newuserdata( L, sizeof(T) );
             if( ud ) {
-                T *inst = new (ud) T;
+                T *inst = new (ud) T(std::forward<Args>(args)...);
                 luaL_getmetatable( L, T::name( ) );
                 lua_setmetatable(L, -2);
                 return inst;
@@ -483,12 +483,12 @@ namespace lua {
             return NULL;
         }
 
-        template <typename T>
-        static int create_metatable_call( lua_State *L )
+        template <typename T, typename ...Args>
+        static int create_metatable_call( lua_State *L, Args&& ... args )
         {
             void *ud = lua_newuserdata( L, sizeof(T) );
             if( ud ) {
-                new (ud) T;
+                new (ud) T(std::forward<Args>(args)...);
                 luaL_getmetatable( L, T::name( ) );
                 lua_setmetatable( L, -2 );
                 return 1;
@@ -496,10 +496,10 @@ namespace lua {
             return 0;
         }
 
-        template <typename T>
-        T *create_metatable( )
+        template <typename T, typename ...Args>
+        T *create_metatable( Args&& ... args )
         {
-            return create_metatable<T>( vm_ );
+            return create_metatable<T>( vm_, std::forward<Args>(args)... );
         }
 
         /// get metatable. returns null if failed

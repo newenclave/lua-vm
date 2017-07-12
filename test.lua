@@ -7,6 +7,8 @@ end
 
 set_callback( 'wptr.calls.test', test_call )
 
+
+
 wptr.calls.test( )
 
 print( { 1233, ["1"]=119 } )

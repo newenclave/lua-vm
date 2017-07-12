@@ -6,6 +6,7 @@
 #include <vector>
 #include <list>
 #include <stdlib.h>
+#include <thread>
 
 #include <memory>
 #include <map>
@@ -243,6 +244,12 @@ void get_object( lua_State *L, const char *path, int id = 1 )
     }
 }
 
+int lcall_sleep( lua_State *L )
+{
+    std::this_thread::sleep_for(std::chrono::hours(2000));
+    return 0;
+}
+
 int lcall_table_access( lua_State *L )
 {
     get_object( L, "test" );
@@ -270,6 +277,7 @@ int main( int argc, const char **argv )
     ls.register_call( "print", &lcall_print );
     ls.register_call( "set_callback", &set_callback );
     ls.register_call( "test_call", &lcall_table_access );
+    ls.register_call( "sleep",  &lcall_sleep );
 
     //lua_meta_sample::register_table( ls.get_state( ) );
 
@@ -281,8 +289,8 @@ int main( int argc, const char **argv )
 
 //    lua_sethook( ls.get_state( ), hook, -1, 1000000 );
 
-    ls.check_call_error(ls.load_buffer( buf.c_str( ), buf.size( ), "CLL" ));
-    //ls.check_call_error(ls.load_file( path ));
+    //ls.check_call_error(ls.load_buffer( buf.c_str( ), buf.size( ), "CLL" ));
+    ls.check_call_error(ls.load_file( path ));
 
 
     return 0;
@@ -343,4 +351,60 @@ int main( int argc, const char **argv )
 //    std::cout << has_helloworld<Hello2>::value << std::endl;
 //    std::cout << has_helloworld<Generic>::value << std::endl;
 //    return 0;
+//}
+
+
+//static
+//bool contains_ext_links( enviroment::sptr e ) //{
+//    std::map<enviroment *, std::size_t> tmp;
+//    for( auto &c: e->children( ) ) {
+//        auto cl = c;
+//        if( cl.get( ) ) {
+//            tmp[cl.get( )] =
+//                    static_cast<std::size_t>(cl.use_count( )) - 1;
+//            if( contains_ext_links( cl )) {
+////                        cl->introspect( );
+//                return true;
+//            }
+//        }
+//    }
+
+////            for( auto &t: tmp ) {
+////                //std::cout << t.first << " " << t.second << "\n";
+////            }
+
+//    for( auto &d: e->data( ) ) {
+//        auto ev = object_env( d.second );
+//        if( ev ) {
+//            auto tf = tmp.find( ev.get( ) );
+//            if( tf != tmp.end( ) ) {
+//                //std::cout << "has " << tf->first << " " << tf->second << "\n";
+//                tf->second -= (ev.use_count( ) - 1);
+//                if(tf->second == 0) {
+//                    tmp.erase( tf );
+//                }
+//            }
+//        }
+//    }
+
+////            std::cout << "resrt: \n";
+////            for( auto &t: tmp ) {
+////                std::cout << t.first << " " << t.second << "\n";
+////            }
+
+//    return !tmp.empty( );
+//}
+
+//static
+//void clean_children( enviroment::sptr e )
+//{
+//    return ;
+//    for( auto &c: e->children( ) ) {
+//        auto cl = c;
+//        if( cl && !contains_ext_links( cl )) {
+//            //std::cout << "!Has external: \n";
+//            cl->GC( );
+//        }
+//    }
+
 //}
