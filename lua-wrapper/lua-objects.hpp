@@ -744,7 +744,7 @@ namespace lua { namespace objects {
 
     typedef std::shared_ptr<table> table_sptr;
 
-    class metatable: public table {
+    class metatable_recorder: public table {
 
         std::string     name_;
         const luaL_Reg *funcs_;
@@ -752,7 +752,7 @@ namespace lua { namespace objects {
 
     public:
 
-        metatable( std::string name,
+        metatable_recorder( std::string name,
                    const luaL_Reg  *funcs = nullptr,
                    const char *index_name = "__index" )
             :name_(name)
@@ -796,6 +796,57 @@ namespace lua { namespace objects {
             }
         }
 
+    };
+
+    template <typename T>
+    class metatable: public table {
+
+    public:
+
+        using value_type = T;
+
+        template <typename ...Args>
+        metatable( Args && ... args )
+            :value_(std::forward<Args>(args)...)
+        { }
+
+        ~metatable(  )
+        { }
+
+        static
+        void register_meta( lua_State *L, std::string name,
+                            const luaL_Reg  *funcs = nullptr,
+                            const char *index_name = "__index" )
+        {
+
+            luaL_newmetatable( L, name.c_str( ) );
+
+            if( index_name ) {
+                /// push self
+                lua_pushstring( L, index_name ); /// __index name
+                lua_pushvalue ( L, -2 );         /// metatable reference
+                lua_settable  ( L, -3 );         /// metatable
+            }
+
+            if( funcs ) {
+                luaL_setfuncs( L, funcs, 0 ); /// push function lists
+            }
+        }
+
+
+        void push( lua_State *L ) const
+        {
+            void *ud = lua_newuserdata( L, sizeof(T) );
+            if( ud ) {
+                new (ud) T(value_);
+                luaL_getmetatable( L, T::name( ) );
+                lua_setmetatable( L, -2 );
+            } else {
+                lua_pushnil( L );
+            }
+        }
+    private:
+        value_type value_;
     };
 
     class reference: public base {

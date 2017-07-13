@@ -1,7 +1,14 @@
 
 --print( mysin( 90 ), '\n' )
 
+function callback( data )
+    print( "callback with!", data )
+end
+
 local t = get_test( )
 
-print(t.callt( )["one"])
-print(t.callt( )["two"])
+print(t.a, t.b, t.c)
+
+print(t.a:mess( ), t.b:mess( ))
+
+print( t.a:get( ):mess( ) )

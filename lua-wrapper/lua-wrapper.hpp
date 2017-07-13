@@ -460,7 +460,7 @@ namespace lua {
 
             call_table.push_back( empty );
 
-            objects::metatable mt( T::name( ), &call_table[0] );
+            objects::metatable_recorder mt( T::name( ), &call_table[0] );
             mt.push( L );
         }
 
@@ -498,14 +498,13 @@ namespace lua {
         }
 
         template <typename T, typename ...Args>
-        static objects::base_sptr create_metatable_ref( lua_State *L,
-                                                        Args&& ... args )
+        static objects::base_sptr create_metatable_object( lua_State *L,
+                                                           Args&& ... args )
         {
-            using reference = objects::reference;
-            int st = create_metatable_call<T>( L, std::forward<Args>(args)...);
-            if( st ) {
-                auto res = objects::base_sptr( new reference( L, 1 ) );
-                lua_pop( L, 1 );
+            using MT = objects::metatable<T>;
+            void *ud = lua_newuserdata( L, sizeof(T) );
+            if( ud ) {
+                objects::base_sptr res( new MT( std::forward<Args>(args)... ) );
                 return res;
             }
             return objects::base_sptr( );

@@ -10,122 +10,70 @@
 
 #include <memory>
 #include <map>
+#include <tuple>
 
 #include "lua-wrapper/lua-wrapper.hpp"
 #include "lua-wrapper/lua-objects.hpp"
 
 namespace lo = lua::objects;
 
-void print_sptr( lua_State *L, const lo::base *o_, int iii )
-{
-    const std::string space( iii * 2, ' ' );
-    if( iii == 10 ) {
-        std::cout <<  space << o_->str( ) << "\n";
-        return;
-    }
-    const lo::base *o = o_;
-    lo::base_sptr sptr;
-    lua::state ls(L);
-
-    if( o->count( ) == 0 ) {
-        sptr = ls.ref_to_object( o );
-        o = sptr.get( );
-    }
-
-    //std::cout << "G " << o->count( ) << "\n";
-
-    if(o->count( )) {
-        for( size_t i=0; i<o->count( ); ++i ) {
-            auto f = o->at( i );
-            std::cout << space << f->at(0)->str( ) << " -> \n";
-            auto t = f->at(1)->type_id( );
-            if( ( t & LUA_TTABLE ) == LUA_TTABLE ) {
-                print_sptr( L, f->at(1), iii + 1 );
-            } else {
-                std::cout << space << f->at(1)->str( ) << "\n";
-            }
-        }
-    } else {
-        std::cout << space << o_->str( ) << "\n";
-    }
-}
-
-int lcall_print( lua_State *L )
-{
-    lua::state ls(L);
-
-    int n = ls.get_top( );
-    for( int i=1; i<=n; ++i ) {
-        lo::base_sptr bp( ls.get_object( i, 1 ) );
-
-//        for( size_t i=0; i<bp->count( ); ++i ) {
-            print_sptr( L, bp.get( ), 0 );
-//        }
-
-        //std::cout << bp->str( );
-    }
-    ls.clean_stack( );
-    return 0;
-}
-
-int lcall_new( lua_State *L )
-{
-    lua::state ls(L);
-    int n = ls.get_top( );
-    for( int i=1; i<=n; ++i ) {
-        lo::base_sptr bp( ls.get_object( i, 1 ) );
-
-//        for( size_t i=0; i<bp->count( ); ++i ) {
-            print_sptr( L, bp.get( ), 0 );
-//        }
-
-        //std::cout << bp->str( );
-    }
-    ls.clean_stack( );
-    return 0;
-}
-
-
-int set_callback( lua_State *L )
-{
-    lua::state ls(L);
-
-    const char *name = ls.get<const char *>( 1 );
-
-    int tt = ls.get_type( 2 );
-    if( tt == LUA_TFUNCTION ) {
-        ls.set_value( name, 2 );
-    }
-
-    ls.clean_stack( );
-
-    return 0;
-}
-
 struct test_meta {
+
+    std::string messge;
+
+    test_meta( const test_meta & ) = default;
+    test_meta& operator = ( const test_meta & ) = default;
+
+    test_meta( std::string mess )
+        :messge(mess)
+    { }
+
 
     ~test_meta( )
     {
-        std::cout << "dtor " << std::hex << this << "\n";
+        std::cout << "dtor " << std::hex << this << std::endl;
     }
 
     static
     int lcall_test( lua_State *L )
     {
         //return lua::state::create_metatable_call<test_meta>( L );
-        auto res = lua::state::create_metatable_ref<test_meta>( L );
-        res->push(L);
+        auto res0 = lua::state::create_metatable_object<test_meta>( L, "0" );
+        auto res1 = lua::state::create_metatable_object<test_meta>( L, "1" );
+        lo::table t;
+        t.add("c", lo::new_integer(1000));
+        t.add("a", res0);
+        t.add("b", res1);
+        t.push(L);
+        return 1;
+    }
+
+    static
+    int lcall_my_message( lua_State *L )
+    {
+        lua::state ls(L);
+        auto m = ls.check_metatable<test_meta>( 1 );
+        ls.push( m->messge );
         return 1;
     }
 
     static
     int lcall_table( lua_State *L )
     {
-        auto call = &lua::state::create_metatable_ref<test_meta>;
+        auto call = &lua::state::create_metatable_object<test_meta, std::string>;
         lua::objects::table res;
-        res.add( "one", call( L ) );
-        res.add( "two", call( L ) );
+        res.add( "one", call( L, "one" ) );
+        res.add( "two", call( L, "two" ) );
         res.push(L);
+        return 1;
+    }
+
+    static
+    int lcall_one( lua_State *L )
+    {
+//        return lua::state::create_metatable_call<test_meta>( L, "!!!!!!!!!!!" );
+        auto call = &lua::state::create_metatable_object<test_meta, std::string>;
+        call(L, "WWWWWW")->push( L );
         return 1;
     }
 
@@ -156,6 +104,8 @@ struct test_meta {
         static const struct luaL_Reg lib[ ] =   {
             { "__tostring", &lcall_message      },
             { "call",       &lcall_test         },
+            { "get",        &lcall_one          },
+            { "mess",       &lcall_my_message   },
             { "callt",      &lcall_table        },
             { nullptr,      nullptr             },
         };
@@ -163,163 +113,14 @@ struct test_meta {
     }
 };
 
-class fs_metatable {
 
-    static int tostring( lua_State *L )
-    {
-        lua::state ls(L);
-        fs_metatable *inst = ls.test_metatable<fs_metatable>( );
-        std::ostringstream oss;
-
-        oss << std::hex << "fs:" << inst;
-
-        ls.push( oss.str( ).c_str( ) );
-
-        return 1;
-    }
-
-    void *test_;
-
-public:
-
-    fs_metatable( )
-    {
-        test_ = malloc( 1011223 );
-    }
-
-    ~fs_metatable( )
-    {
-        free( test_ );
-        std::cout << "~fs_metatable\n";
-    }
-
-    static const char *name( )
-    {
-        return "fstable";
-    }
-
-    static const struct luaL_Reg *table(  )
-    {
-        static const struct luaL_Reg lib[ ] = {
-            { "__tostring", &tostring }
-           ,{ NULL, NULL }
-        };
-        return lib;
-    }
-};
-
-class lua_meta_sample {
-
-    typedef lua_meta_sample this_type;
-
-    static lua_meta_sample *get_inst( lua_State *L )
-    {
-        void *ud = luaL_checkudata( L, 1, name( ) );
-        return static_cast<lua_meta_sample *>(ud);
-    }
-
-    static int lcall_tostring( lua_State *L )
-    {
-        lua_meta_sample *inst = get_inst( L );
-        lua::state ls(L);
-        if( inst ) {
-            ls.push( "test_tableinst" );
-            return 1;
-        }
-        return 0;
-    }
-
-    static int lcall_print( lua_State *L )
-    {
-        lua_meta_sample *inst = get_inst( L );
-        inst->print( );
-        return 0;
-    }
-
-    void print( )
-    {
-        std::cout << "Hello from test!\n";
-    }
-
-public:
-
-    ~lua_meta_sample( )
-    {
-        std::cout << "~lua_meta_sample\n";
-    }
-
-    static const char *name( )
-    {
-        return "metaname.test.test2";
-    }
-
-    static const struct luaL_Reg *table(  )
-    {
-        static
-        const struct luaL_Reg lib[ ] = {
-            //,{ "__gc",       &this_type::lcall_gc       }
-             { "__tostring", &this_type::lcall_tostring }
-            ,{ "print",      &this_type::lcall_print    }
-
-            ,{ nullptr,      nullptr                    }
-        };
-        return lib;
-    }
-};
-
-//typedef void (*lua_Hook) (lua_State *L, lua_Debug *ar);
-
-void hook( lua_State *L, lua_Debug *ar )
-{
-    std::cout << "Hook! " << ar->event << "\n";
-    lua::state ls(L);
-    luaL_error( L, "Error toolong" );
-}
-
-const std::string buf =
-        "test = { } "
-        "test.test = \"Hello!\" "
-        "test.a = { { 'test bla bla lb', 1000.990, ['2'] = 2222 }, "
-        "           r = \"World\" } "
-        "test.a['here is cool string'] = 'bla bla bla'"
-        "test.a.b = { testb = 1 }"
-        "test_call(test)"
-        ;
-
-void get_object( lua_State *L, const char *path, int id = 1 )
+template <typename T>
+lo::base_sptr create( lua_State *L )
 {
     lua::state ls(L);
-    auto obj = ls.get_object( id );
-    auto o = lua::object_wrapper::object_by_path( L, obj.get( ), path );
-    if( o ) {
-        std::cout << "'" << path << "' = " << o->str( ) << "\n";
-    } else {
-        std::cout << "'" << path << "' was not found\n";
-    }
+    lo::base_sptr res(new lo::metatable<T>( "Hello!" ) );
+    return res;
 }
-
-int lcall_sleep( lua_State *L )
-{
-    std::this_thread::sleep_for(std::chrono::hours(2000));
-    return 0;
-}
-
-int lcall_table_access( lua_State *L )
-{
-    get_object( L, "test" );
-    get_object( L, "a" );
-    get_object( L, "a.'here is cool string'" );
-    get_object( L, "a.\"here is cool string\"" );
-    get_object( L, "a.b" );
-    get_object( L, "a.b.testb" );
-
-    get_object( L, "a.1" );
-    get_object( L, "a.1.1" );
-    get_object( L, "a.1.2" );
-    return 0;
-}
-
-
 
 int main( int argc, const char **argv )
 { try {
@@ -331,25 +132,12 @@ int main( int argc, const char **argv )
     ls.openlibs( );
 
     ls.register_metatable<test_meta>( );
-//    ls.register_call( "print", &lcall_print );
-    ls.register_call( "get_test", &test_meta::lcall_test );
-    ls.register_call( "set_callback", &set_callback );
-    ls.register_call( "test_call", &lcall_table_access );
-    ls.register_call( "sleep",  &lcall_sleep );
+    ls.register_call( "get_test",  &test_meta::lcall_test );
 
-    //lua_meta_sample::register_table( ls.get_state( ) );
-
-    ls.register_metatable<lua_meta_sample>( );
-    ls.register_metatable<fs_metatable>( );
-
-    ls.register_call( "new_table", &lua::state::create_metatable_call<lua_meta_sample> );
-    ls.register_call( "new_fs",    &lua::state::create_metatable_call<fs_metatable>);
-
-//    lua_sethook( ls.get_state( ), hook, -1, 1000000 );
-
-    //ls.check_call_error(ls.load_buffer( buf.c_str( ), buf.size( ), "CLL" ));
     ls.check_call_error(ls.load_file( path ));
 
+    auto b = create<test_meta>( ls.get_state( ) );
+    ls.exec_function( "callback", *b );
 
     return 0;
 
