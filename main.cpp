@@ -53,13 +53,6 @@ void print_sptr( lua_State *L, const lo::base *o_, int iii )
 int lcall_print( lua_State *L )
 {
     lua::state ls(L);
-    lo::base_sptr bp( ls.get_object( 1, 1 ) );
-
-    auto r = lua::object_wrapper( L, bp.get( ) )["f"].as_object( );
-
-    std::cout << r->str( ) << "\n";
-
-//    return 0;
 
     int n = ls.get_top( );
     for( int i=1; i<=n; ++i ) {
@@ -108,6 +101,67 @@ int set_callback( lua_State *L )
 
     return 0;
 }
+
+struct test_meta {
+
+    ~test_meta( )
+    {
+        std::cout << "dtor " << std::hex << this << "\n";
+    }
+
+    static
+    int lcall_test( lua_State *L )
+    {
+        //return lua::state::create_metatable_call<test_meta>( L );
+        auto res = lua::state::create_metatable_ref<test_meta>( L );
+        res->push(L);
+        return 1;
+    }
+
+    static
+    int lcall_table( lua_State *L )
+    {
+        auto call = &lua::state::create_metatable_ref<test_meta>;
+        lua::objects::table res;
+        res.add( "one", call( L ) );
+        res.add( "two", call( L ) );
+        res.push(L);
+        return 1;
+    }
+
+    static
+    int lcall_message( lua_State *L )
+    {
+        lua::state ls(L);
+        auto mt = ls.test_metatable<test_meta>( L, 1 );
+        if( mt ) {
+            std::ostringstream oss;
+            oss << "Hello from " << std::hex << mt;
+            ls.push( oss.str( ) );
+            return 1;
+        }
+        return 0;
+    }
+
+
+    static
+    const char *name( )
+    {
+        return "test_meta";
+    }
+
+    static
+    const struct luaL_Reg *table(  )
+    {
+        static const struct luaL_Reg lib[ ] =   {
+            { "__tostring", &lcall_message      },
+            { "call",       &lcall_test         },
+            { "callt",      &lcall_table        },
+            { nullptr,      nullptr             },
+        };
+        return lib;
+    }
+};
 
 class fs_metatable {
 
@@ -265,6 +319,8 @@ int lcall_table_access( lua_State *L )
     return 0;
 }
 
+
+
 int main( int argc, const char **argv )
 { try {
 
@@ -274,7 +330,9 @@ int main( int argc, const char **argv )
 
     ls.openlibs( );
 
-    ls.register_call( "print", &lcall_print );
+    ls.register_metatable<test_meta>( );
+//    ls.register_call( "print", &lcall_print );
+    ls.register_call( "get_test", &test_meta::lcall_test );
     ls.register_call( "set_callback", &set_callback );
     ls.register_call( "test_call", &lcall_table_access );
     ls.register_call( "sleep",  &lcall_sleep );

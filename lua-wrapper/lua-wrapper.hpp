@@ -483,6 +483,7 @@ namespace lua {
             return NULL;
         }
 
+
         template <typename T, typename ...Args>
         static int create_metatable_call( lua_State *L, Args&& ... args )
         {
@@ -494,6 +495,20 @@ namespace lua {
                 return 1;
             }
             return 0;
+        }
+
+        template <typename T, typename ...Args>
+        static objects::base_sptr create_metatable_ref( lua_State *L,
+                                                        Args&& ... args )
+        {
+            using reference = objects::reference;
+            int st = create_metatable_call<T>( L, std::forward<Args>(args)...);
+            if( st ) {
+                auto res = objects::base_sptr( new reference( L, 1 ) );
+                lua_pop( L, 1 );
+                return res;
+            }
+            return objects::base_sptr( );
         }
 
         template <typename T, typename ...Args>

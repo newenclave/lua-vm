@@ -1,14 +1,7 @@
 
 --print( mysin( 90 ), '\n' )
 
-function test_call(  )
-    print( "Hello!\n" )
-end
+local t = get_test( )
 
-set_callback( 'wptr.calls.test', test_call )
-
-
-
-wptr.calls.test( )
-
-print( { 1233, ["1"]=119 } )
+print(t.callt( )["one"])
+print(t.callt( )["two"])
