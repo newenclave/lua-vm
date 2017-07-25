@@ -38,8 +38,8 @@ struct test_meta {
     int lcall_test( lua_State *L )
     {
         //return lua::state::create_metatable_call<test_meta>( L );
-        auto res0 = lua::state::create_metatable_object<test_meta>( L, "0" );
-        auto res1 = lua::state::create_metatable_object<test_meta>( L, "1" );
+        auto res0 = lua::state::create_metatable_object<test_meta>( "0" );
+        auto res1 = lua::state::create_metatable_object<test_meta>( "1" );
         lo::table t;
         t.add("c", lo::new_integer(1000));
         t.add("a", res0);
@@ -62,8 +62,8 @@ struct test_meta {
     {
         auto call = &lua::state::create_metatable_object<test_meta, std::string>;
         lua::objects::table res;
-        res.add( "one", call( L, "one" ) );
-        res.add( "two", call( L, "two" ) );
+        res.add( "one", call( "one" ) );
+        res.add( "two", call( "two" ) );
         res.push(L);
         return 1;
     }
@@ -73,7 +73,7 @@ struct test_meta {
     {
 //        return lua::state::create_metatable_call<test_meta>( L, "!!!!!!!!!!!" );
         auto call = &lua::state::create_metatable_object<test_meta, std::string>;
-        call(L, "WWWWWW")->push( L );
+        call( "WWWWWW")->push( L );
         return 1;
     }
 

@@ -12,3 +12,5 @@ print(t.a, t.b, t.c)
 print(t.a:mess( ), t.b:mess( ))
 
 print( t.a:get( ):mess( ) )
+
+print(1 >> 100)

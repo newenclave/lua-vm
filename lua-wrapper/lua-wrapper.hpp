@@ -498,16 +498,11 @@ namespace lua {
         }
 
         template <typename T, typename ...Args>
-        static objects::base_sptr create_metatable_object( lua_State *L,
-                                                           Args&& ... args )
+        static objects::base_sptr create_metatable_object( Args&& ... args )
         {
             using MT = objects::metatable<T>;
-            void *ud = lua_newuserdata( L, sizeof(T) );
-            if( ud ) {
-                objects::base_sptr res( new MT( std::forward<Args>(args)... ) );
-                return res;
-            }
-            return objects::base_sptr( );
+            objects::base_sptr res( new MT( std::forward<Args>(args)... ) );
+            return res;
         }
 
         template <typename T, typename ...Args>
